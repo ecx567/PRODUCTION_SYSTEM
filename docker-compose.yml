@@ -1,0 +1,121 @@
+version: "3.9"
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  # ── MQTT Broker ──────────────────────────────────────────
+  emqx:
+    image: emqx/emqx:5.8
+    container_name: crop-emqx
+    restart: unless-stopped
+    ports:
+      - "${EMQX_MQTT_PORT:-1883}:1883"          # MQTT
+      - "${EMQX_WS_PORT:-8083}:8083"            # MQTT/WebSocket
+      - "${EMQX_DASHBOARD_PORT:-18083}:18083"    # Dashboard UI
+    environment:
+      EMQX_NAME: crop-production
+      EMQX_LOG__LEVEL: "${EMQX_LOG_LEVEL:-info}"
+      EMQX_AUTH__USER__PASSWORD: "${EMQX_ADMIN_PASSWORD:-admin}"
+    volumes:
+      - emqx-data:/opt/emqx/data
+    networks:
+      - crop-net
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "emqx", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ── TimescaleDB ──────────────────────────────────────────
+  timescaledb:
+    image: timescale/timescaledb:2.17-pg16
+    container_name: crop-timescaledb
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-cropproduction}"
+      POSTGRES_USER: "${POSTGRES_USER:-cropuser}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-cropsecret}"
+    volumes:
+      - timescaledb-data:/var/lib/postgresql/data
+      - ./scripts/db-init.sh:/docker-entrypoint-initdb.d/init.sh:ro
+    networks:
+      - crop-net
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cropuser} -d ${POSTGRES_DB:-cropproduction}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ────────────────────────────────────────────────
+  redis:
+    image: redis:7.4-alpine
+    container_name: crop-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: redis-server --appendonly yes --requirepass "${REDIS_PASSWORD:-}"
+    volumes:
+      - redis-data:/data
+    networks:
+      - crop-net
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # ── FastAPI Backend ──────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: crop-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER:-cropuser}:${POSTGRES_PASSWORD:-cropsecret}@timescaledb:5432/${POSTGRES_DB:-cropproduction}"
+      REDIS_URL: "redis://:${REDIS_PASSWORD:-}@redis:6379/0"
+      EMQX_HOST: "emqx"
+      EMQX_PORT: "${EMQX_MQTT_PORT:-1883}"
+      JWT_SECRET: "${JWT_SECRET:-change-me-in-production}"
+      JWT_PRIVATE_KEY: "${JWT_PRIVATE_KEY:-}"
+      JWT_PUBLIC_KEY: "${JWT_PUBLIC_KEY:-}"
+      JWT_ALGORITHM: "RS256"
+      ACCESS_TOKEN_EXPIRE_MINUTES: "15"
+      REFRESH_TOKEN_EXPIRE_DAYS: "7"
+      CORS_ORIGINS: "${CORS_ORIGINS:-*}"
+      ENVIRONMENT: "${ENVIRONMENT:-development}"
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      emqx:
+        condition: service_started
+    volumes:
+      - ./backend:/app
+    networks:
+      - crop-net
+    logging: *default-logging
+
+volumes:
+  emqx-data:
+    driver: local
+  timescaledb-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  crop-net:
+    driver: bridge
