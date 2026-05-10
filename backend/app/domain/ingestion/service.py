@@ -65,13 +65,16 @@ class IngestionService:
         Returns:
             ``PoisonPillResult`` with counts of stored / isolated / duplicate readings.
         """
-        tenant_id = self._extract_tenant_id(topic)
-        sensor_id = self._extract_sensor_id(topic)
-        if tenant_id is None or sensor_id is None:
-            logger.warning("Cannot extract tenant/sensor from topic=%s", topic)
-            return PoisonPillResult(
-                total_submitted=1, stored_count=0, isolated_count=1,
-                details=f"Invalid topic format: {topic}",
+        raw_tenant_id = self._extract_tenant_id(topic)
+        if not raw_tenant_id:
+            raise ValueError(
+                f"Cannot extract tenant_id from topic: {topic}",
+            )
+        try:
+            tenant_id = UUID(raw_tenant_id)
+        except ValueError:
+            raise ValueError(
+                f"Invalid tenant_id UUID format in topic: {topic}",
             )
 
         try:
@@ -85,7 +88,9 @@ class IngestionService:
             )
 
         # Inject topic-derived fields if not already present
-        data.setdefault("sensor_id", str(sensor_id))
+        sensor_id = self._extract_sensor_id(topic)
+        if sensor_id:
+            data.setdefault("sensor_id", sensor_id)
         data.setdefault("tenant_id", str(tenant_id))
 
         try:

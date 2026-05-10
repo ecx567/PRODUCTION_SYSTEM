@@ -165,7 +165,7 @@ def invalid_sensor_payload() -> dict:
 
 @pytest.fixture
 def mqtt_topic() -> str:
-    return "farm/a1b2c3d4/sensor/550e8400-e29b-41d4-a716-446655440000/data"
+    return "farm/a1b2c3d4-e29b-41d4-a716-446655440000/sensor/550e8400-e29b-41d4-a716-446655440000/data"
 
 
 @pytest.fixture

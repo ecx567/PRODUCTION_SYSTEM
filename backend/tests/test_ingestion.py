@@ -303,5 +303,8 @@ class TestAnalyticsService:
         ]
         report = AnalyticsService.check_data_quality(readings)
         assert report["total_readings"] == 2
-        # 8 total metrics (4 per reading), 4 present
-        assert report["completeness_pct"] == 50.0
+        # 8 total metrics (4 per reading), 5 present
+        # Reading 1: temp=25.0, humidity=70.0, soil_moisture=None, rain=0.0  → 3/4
+        # Reading 2: temp=26.0, humidity=None, soil_moisture=45.0, rain=None → 2/4
+        # Total: 5/8 = 62.5%
+        assert report["completeness_pct"] == 62.5
