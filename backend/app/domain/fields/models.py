@@ -10,7 +10,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, String, func
+from sqlalchemy import DateTime, Float, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -32,9 +32,9 @@ class Field(Base):
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     crop_type: Mapped[str] = mapped_column(
-        Enum("banana", "maize", "cacao", "rice", name="crop_type", create_type=False),
+        String(50),
         nullable=False,
-        comment="Validated by Pydantic schema: banana|maize|cacao|rice.",
+        comment="Validated by Pydantic schema. One of 10 allowed crop types.",
     )
     planted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),

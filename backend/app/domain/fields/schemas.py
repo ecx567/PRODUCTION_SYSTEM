@@ -1,7 +1,7 @@
 """
 Pydantic schemas for Field CRUD operations.
 
-Crop types are validated against the allowed ENUM: banana, maize, cacao, rice.
+Crop types are validated against the allowed set of 10 crop types.
 """
 
 from __future__ import annotations
@@ -14,7 +14,10 @@ from pydantic import BaseModel, Field, field_validator
 
 
 # ── Allowed crop types ──────────────────────────────────────
-ALLOWED_CROP_TYPES = {"banana", "maize", "cacao", "rice"}
+ALLOWED_CROP_TYPES = {
+    "banana", "maize", "cacao", "rice",
+    "coffee", "sugarcane", "soybean", "sunflower", "palm_oil", "cotton",
+}
 
 
 # ── Create / Update Schemas ─────────────────────────────────
@@ -27,7 +30,7 @@ class FieldCreate(BaseModel):
         description="Human-readable field name.",
     )
     crop_type: str = Field(
-        ..., description="Crop type: banana | maize | cacao | rice.",
+        ..., description="Crop type — one of 10 allowed values.",
     )
     planted_at: datetime | None = Field(
         default=None,
