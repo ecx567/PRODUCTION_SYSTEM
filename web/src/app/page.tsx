@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import LockScreen from "@/components/lock-screen";
 
 export default function Home() {
-  redirect("/dashboard");
+  return <LockScreen />;
 }
