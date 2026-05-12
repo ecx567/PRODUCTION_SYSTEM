@@ -12,8 +12,9 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.core.database import db
@@ -44,8 +45,21 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize database connection pool
     await db.initialize(settings.DATABASE_URL)
 
-    # Initialize Redis
-    await redis_manager.initialize(settings.REDIS_URL)
+    # Initialize Redis (required if REDIS_URL is set, optional otherwise)
+    await redis_manager.initialize(
+        settings.REDIS_URL,
+        required=bool(settings.REDIS_URL),
+    )
+
+    # ── Seed database (dev/test only) ───────────────────────
+    if settings.ENVIRONMENT != "production":
+        from app.core.database import get_db
+        from app.seed import seed_database
+
+        factory = db.get_session_factory()
+        async with factory() as session:
+            await seed_database(session)
+            await session.commit()
 
     # ── Initialize MQTT and subscribe to tenant topics ──────
     _ingestion_service = IngestionService()
@@ -112,9 +126,14 @@ def create_app() -> FastAPI:
     )
 
     # ── Middleware ──────────────────────────────────────────
+    cors_origins = (
+        ["http://localhost:3000", "http://127.0.0.1:3000"]
+        if settings.ENVIRONMENT != "production"
+        else settings.CORS_ORIGINS.split(",")
+    )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.CORS_ORIGINS.split(","),
+        allow_origins=cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -139,6 +158,16 @@ def create_app() -> FastAPI:
     app.include_router(recommendations_router, prefix="/api/v1")
     app.include_router(predictions_router, prefix="/api/v1")
     app.include_router(sync_router, prefix="/api/v1")
+
+    # ── Global exception handler ────────────────────────────
+    @app.exception_handler(Exception)
+    async def global_exception_handler(request: Request, exc: Exception):
+        """Catch any unhandled exception, log it, and return a clean 500."""
+        logger.exception("Unhandled exception on %s %s: %s", request.method, request.url.path, exc)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Internal server error: {type(exc).__name__}. Check server logs."},
+        )
 
     # ── Root health check ───────────────────────────────────
     @app.get("/health")
