@@ -149,6 +149,7 @@ def create_app() -> FastAPI:
     from app.domain.recommendations.router import router as recommendations_router
     from app.domain.analytics.router_predictions import router as predictions_router
     from app.domain.sync.router import router as sync_router
+    from app.domain.weather.router import router as weather_router
     app.include_router(auth_router, prefix="/api/v1")
     app.include_router(sse_router, prefix="/api/v1")
     app.include_router(ingestion_router, prefix="/api/v1")
@@ -158,6 +159,7 @@ def create_app() -> FastAPI:
     app.include_router(recommendations_router, prefix="/api/v1")
     app.include_router(predictions_router, prefix="/api/v1")
     app.include_router(sync_router, prefix="/api/v1")
+    app.include_router(weather_router, prefix="/api/v1")
 
     # ── Global exception handler ────────────────────────────
     @app.exception_handler(Exception)
