@@ -47,3 +47,12 @@ mobile/ios/
 
 # ── Logs ────────────────────────────────────────────────────
 *.log
+
+# ── Runtime Artifacts ───────────────────────────────────────
+*.pid
+token.txt
+.seed_ids.json
+backend/test.db
+backend3_process.txt
+backend_job.id
+backend_pid.txt
