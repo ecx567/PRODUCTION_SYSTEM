@@ -54,15 +54,6 @@ export function useSSE(): UseSSEReturn {
   const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
-    // Don't connect if no token
-    const { getAccessToken } = require("./api");
-    const token = getAccessToken();
-    if (!token) {
-      setError("Not authenticated");
-      setIsConnected(false);
-      return;
-    }
-
     const es = new EventSource(SSE_URL, {
       withCredentials: true,
     });

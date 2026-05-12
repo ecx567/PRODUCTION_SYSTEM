@@ -110,13 +110,15 @@ class MQTTManager:
         self._client.on_message = self._on_message
         self._client.on_disconnect = self._on_disconnect
 
+        # gmqtt auth is set via set_auth_credentials, NOT passed to connect()
+        if username:
+            self._client.set_auth_credentials(username, password or "")
+
         try:
             await self._client.connect(
                 host,
                 port=port,
                 ssl=use_tls,
-                username=username,
-                password=password,
                 version=4,  # MQTT 3.1.1 (widely compatible)
             )
             self._connected = True
@@ -245,12 +247,12 @@ class MQTTManager:
             await asyncio.sleep(wait)
 
             try:
+                if self._username:
+                    self._client.set_auth_credentials(self._username, self._password or "")
                 await self._client.connect(
                     self._host,
                     port=self._port,
                     ssl=self._use_tls,
-                    username=self._username,
-                    password=self._password,
                     version=4,
                 )
                 # on_connect will handle resubscription

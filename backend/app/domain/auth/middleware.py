@@ -25,6 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.domain.auth.models import User
 from app.domain.auth.service import validate_token
+from fastapi import Request
 
 logger = logging.getLogger("crop.auth.middleware")
 
@@ -86,6 +87,31 @@ async def get_current_user(
         raise _CREDENTIALS_EXC
 
     token = credentials.credentials
+    try:
+        payload = validate_token(token, expected_type="access")
+    except jwt.ExpiredSignatureError:
+        raise _CREDENTIALS_EXC from None
+    except jwt.InvalidTokenError:
+        raise _CREDENTIALS_EXC from None
+
+    return AuthPayload(payload)
+
+
+async def get_current_user_from_cookie(
+    request: Request,
+) -> AuthPayload:
+    """Extract and validate the current user from the ``session`` httpOnly cookie.
+
+    Used by the web client's ``GET /session`` endpoint. The cookie carries an
+    **access** JWT, validated identically to the ``Authorization`` header path.
+
+    Raises:
+        HTTPException(401): Missing, expired, or invalid cookie.
+    """
+    token = request.cookies.get("session")
+    if not token:
+        raise _CREDENTIALS_EXC
+
     try:
         payload = validate_token(token, expected_type="access")
     except jwt.ExpiredSignatureError:

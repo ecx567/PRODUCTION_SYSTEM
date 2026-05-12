@@ -8,6 +8,7 @@ Create Date: 2026-05-10
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
+from app.domain.auth.models import UserRole
 
 revision = "001"
 down_revision = None
@@ -19,15 +20,7 @@ def upgrade() -> None:
     # ── Extensions ──────────────────────────────────────────
     op.execute('CREATE EXTENSION IF NOT EXISTS "pgcrypto"')
     op.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
-    # Note: TimescaleDB extension is loaded by the Docker image;
-    # uncomment if running without the timescaledb image:
-    # op.execute('CREATE EXTENSION IF NOT EXISTS "timescaledb"')
-
-    # ── Role ENUM ───────────────────────────────────────────
-    op.execute("""CREATE TYPE user_role AS ENUM ('admin', 'agronomist', 'farmer')""")
-
-    # ── Crop Type ENUM ──────────────────────────────────────
-    op.execute("""CREATE TYPE crop_type AS ENUM ('banana', 'maize', 'cacao', 'rice')""")
+    op.execute('CREATE EXTENSION IF NOT EXISTS "timescaledb"')
 
     # ── Tenants ─────────────────────────────────────────────
     op.create_table(
@@ -61,9 +54,9 @@ def upgrade() -> None:
         sa.Column("password_hash", sa.String(255), nullable=False),
         sa.Column(
             "role",
-            sa.Enum("admin", "agronomist", "farmer", name="user_role"),
+            sa.Enum(UserRole, name="user_role", create_type=False),
             nullable=False,
-            server_default="farmer",
+            server_default=UserRole.FARMER.name,
         ),
         sa.Column(
             "is_active",

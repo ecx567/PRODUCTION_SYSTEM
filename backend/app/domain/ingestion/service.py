@@ -308,12 +308,13 @@ class IngestionService:
         if not values:
             return 0
 
-        # Build multi-row VALUES clause
+        # Build multi-row VALUES clause (CAST avoids PostgreSQL :: syntax
+        # which conflicts with asyncpg's named-parameter conversion).
         placeholders = ", ".join(
             f"(:time_{i}, :tenant_id_{i}, :sensor_id_{i}, :field_id_{i}, "
             f":temp_{i}, :humidity_{i}, :soil_moisture_{i}, :rain_{i}, "
             f":ingestion_ts_{i}, :validation_status_{i}, "
-            f":signal_quality_{i}::jsonb)"
+            f"CAST(:signal_quality_{i} AS jsonb))"
             for i in range(len(values))
         )
 

@@ -6,7 +6,16 @@ Digital agriculture management platform for real-time crop monitoring, IoT senso
 
 Crop Production System helps farmers monitor field conditions, receive irrigation/fertilization recommendations, track pest risks, and predict yields — all backed by IoT sensor data and machine learning models.
 
-The system supports four crop types: **banana**, **maize**, **cacao**, and **rice**.
+The system supports four crop types: **banana**, **maize**, **cacao**, and **rice** — with extensible architecture for additional crops.
+
+### v0.1 Features
+
+- **Real-time monitoring** via SSE (Server-Sent Events) — live sensor data streaming to the dashboard
+- **Smart alert rules** — 20 preconfigured rules (temperature, humidity, soil moisture, rain) with per-crop thresholds
+- **Field management** — organize fields by crop type with area and planting dates
+- **JWT authentication** — RS256 with refresh token rotation
+- **IoT ingestion pipeline** — MQTT-based sensor data processing with Redis pub/sub
+- **Seed data** — demo scripts to bootstrap fields, sensors, and alert rules for testing
 
 ## Architecture
 
@@ -69,8 +78,9 @@ The system supports four crop types: **banana**, **maize**, **cacao**, and **ric
 │   └── tests/            # 132+ tests (pytest)
 ├── web/                  # Next.js 15 dashboard
 │   └── src/
-│       ├── app/          # 6 pages (overview, fields, alerts, etc.)
-│       └── components/   # 9 reusable components
+│       ├── app/          # Pages (dashboard, fields, analytics, devices, rules, alerts, users, settings, iot)
+│       ├── components/   # Reusable components (sidebar, topbar, lock-screen)
+│       └── lib/          # API client, React hooks (SSE, alerts)
 ├── mobile/               # React Native Expo app
 │   └── src/
 │       ├── app/          # 5 screens (login, fields, alerts, etc.)
@@ -124,12 +134,36 @@ npm install --legacy-peer-deps
 npx expo start
 ```
 
+### Seed Demo Data
+
+Populate the database with sample fields, sensors, and alert rules:
+
+```bash
+# Start the backend first, then:
+python run_backend.py          # Start backend + seed
+# Or manually:
+python seed_8000.py            # Seed fields and sensors
+python seed_alerts.py          # Seed 20 alert rules with events
+```
+
 ### Machine Learning
 
 ```bash
 cd ml
 python train.py --crop maize --model rf
 ```
+
+## Dashboard Pages
+
+| Page | Route | Description |
+|------|-------|-------------|
+| **Dashboard** | `/dashboard` | Real-time metrics, field summaries, sensor status |
+| **Fields** | `/dashboard/fields` | Field registry with crop types, area, planted dates |
+| **Devices** | `/dashboard/devices` | IoT sensor registry, gateways, SSE connection status |
+| **Analytics** | `/dashboard/analytics` | Historical trends, ML predictions, pest risk (in development) |
+| **Alerts** | `/dashboard/alerts` | Event log with severity filters and acknowledgment |
+| **Rules** | `/dashboard/rules` | 20 alert rule definitions with severity and cooldowns |
+| **Users** | `/dashboard/users` | User management (in development) |
 
 ## API Endpoints
 

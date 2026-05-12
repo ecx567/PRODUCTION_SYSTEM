@@ -17,8 +17,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "recharts": "^2.15.4",
-    "tailwind-merge": "^3.6.0",
-    "unrs-resolver": "^1.11.1"
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",

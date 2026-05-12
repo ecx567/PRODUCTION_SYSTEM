@@ -7,6 +7,7 @@ schema for autogenerate support.
 """
 
 import asyncio
+import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -14,6 +15,11 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 # Alembic Config object
 config = context.config
+
+# Allow DATABASE_URL env var to override the ini file (used by dev.ps1)
+_database_url = os.environ.get("DATABASE_URL")
+if _database_url:
+    config.set_main_option("sqlalchemy.url", _database_url)
 
 # Set up Python logging from alembic.ini
 if config.config_file_name is not None:

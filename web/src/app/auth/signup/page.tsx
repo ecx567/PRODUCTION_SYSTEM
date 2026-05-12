@@ -2,27 +2,40 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { loginUser } from "@/lib/api";
+import { signupUser } from "@/lib/api";
 import { Sprout } from "lucide-react";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      await loginUser(email, password);
+      await signupUser(email, password, name || undefined);
       router.push("/dashboard");
     } catch (err: unknown) {
       const msg =
-        err instanceof Error ? err.message : "Login failed. Please try again.";
+        err instanceof Error ? err.message : "Signup failed. Please try again.";
       setError(msg);
     } finally {
       setIsLoading(false);
@@ -40,15 +53,34 @@ export default function LoginPage() {
           <h1 className="text-xl font-bold text-leaf-700">
             Crop Production
           </h1>
-          <p className="text-xs text-soil-500">Precision Agriculture Platform</p>
+          <p className="text-xs text-soil-500">
+            Precision Agriculture Platform
+          </p>
         </div>
       </div>
 
       <h2 className="mb-6 text-center text-lg font-semibold text-leaf-800">
-        Sign in to your account
+        Create your account
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label
+            htmlFor="name"
+            className="block text-sm font-medium text-soil-600"
+          >
+            Full name <span className="text-soil-400">(optional)</span>
+          </label>
+          <input
+            id="name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="John Doe"
+            className="mt-1 block w-full rounded-lg border border-leaf-200 bg-white px-3 py-2 text-sm text-leaf-900 placeholder-soil-300 focus:border-leaf-400 focus:outline-none focus:ring-2 focus:ring-leaf-200"
+          />
+        </div>
+
         <div>
           <label
             htmlFor="email"
@@ -62,7 +94,7 @@ export default function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="admin@crop.local"
+            placeholder="admin@crop.com"
             className="mt-1 block w-full rounded-lg border border-leaf-200 bg-white px-3 py-2 text-sm text-leaf-900 placeholder-soil-300 focus:border-leaf-400 focus:outline-none focus:ring-2 focus:ring-leaf-200"
           />
         </div>
@@ -78,9 +110,28 @@ export default function LoginPage() {
             id="password"
             type="password"
             required
+            minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
+            placeholder="Min. 8 characters"
+            className="mt-1 block w-full rounded-lg border border-leaf-200 bg-white px-3 py-2 text-sm text-leaf-900 placeholder-soil-300 focus:border-leaf-400 focus:outline-none focus:ring-2 focus:ring-leaf-200"
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="confirmPassword"
+            className="block text-sm font-medium text-soil-600"
+          >
+            Confirm password
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            required
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Repeat your password"
             className="mt-1 block w-full rounded-lg border border-leaf-200 bg-white px-3 py-2 text-sm text-leaf-900 placeholder-soil-300 focus:border-leaf-400 focus:outline-none focus:ring-2 focus:ring-leaf-200"
           />
         </div>
@@ -96,17 +147,17 @@ export default function LoginPage() {
           disabled={isLoading}
           className="w-full rounded-lg bg-leaf-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-leaf-600 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLoading ? "Signing in..." : "Sign in"}
+          {isLoading ? "Creating account..." : "Create account"}
         </button>
       </form>
 
       <p className="mt-6 text-center text-sm text-soil-500">
-        {"Don't have an account? "}
+        {"Already have an account? "}
         <a
-          href="/auth/signup"
+          href="/auth/login"
           className="font-medium text-leaf-500 hover:text-leaf-600"
         >
-          Sign up
+          Sign in
         </a>
       </p>
     </div>

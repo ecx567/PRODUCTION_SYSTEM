@@ -139,7 +139,7 @@ interface FetchOptions extends RequestInit {
   raw?: boolean;
 }
 
-async function apiFetch<T>(
+export async function apiFetch<T>(
   path: string,
   options: FetchOptions = {},
 ): Promise<T> {
@@ -160,6 +160,7 @@ async function apiFetch<T>(
   let res = await fetch(url, {
     ...fetchOptions,
     headers,
+    credentials: "include",
   });
 
   // ── Auto-refresh on 401 ─────────────────────────────────────
@@ -173,6 +174,7 @@ async function apiFetch<T>(
       res = await fetch(url, {
         ...fetchOptions,
         headers: retryHeaders,
+        credentials: "include",
       });
     }
   }
@@ -202,6 +204,7 @@ async function attemptTokenRefresh(): Promise<boolean> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: refreshToken }),
+      credentials: "include",
     });
 
     if (!res.ok) {
@@ -239,6 +242,59 @@ export async function loginUser(
   const data = await apiFetch<TokenResponse>("/api/v1/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
+  });
+  setTokens(data.access_token, data.refresh_token);
+  return data;
+}
+
+/** Cookie-based session check — calls GET /api/v1/auth/session.
+ *  Returns user info or null (no session). */
+export interface SessionUser {
+  user_id: string;
+  email: string;
+  role: string;
+  tenant_id: string;
+}
+
+export async function checkSession(): Promise<SessionUser | null> {
+  try {
+    const res = await fetch(`${BASE_URL}/api/v1/auth/session`, {
+      method: "GET",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as SessionUser;
+  } catch {
+    return null;
+  }
+}
+
+/** Cookie-based logout — calls POST /api/v1/auth/logout, then clears in-memory tokens. */
+export async function serverLogout(): Promise<void> {
+  try {
+    await fetch(`${BASE_URL}/api/v1/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch {
+    // Swallow — best-effort server-side logout
+  }
+  clearTokens();
+}
+
+/** Signup — creates user, backend sets cookies, returns tokens for legacy compat. */
+export async function signupUser(
+  email: string,
+  password: string,
+  name?: string,
+): Promise<TokenResponse> {
+  const body: Record<string, string> = { email, password };
+  if (name) body.name = name;
+
+  const data = await apiFetch<TokenResponse>("/api/v1/auth/signup", {
+    method: "POST",
+    body: JSON.stringify(body),
   });
   setTokens(data.access_token, data.refresh_token);
   return data;

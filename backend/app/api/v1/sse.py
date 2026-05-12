@@ -29,7 +29,7 @@ from sse_starlette.sse import EventSourceResponse
 from app.core.redis import get_redis
 from app.domain.auth.middleware import (
     AuthPayload,
-    get_current_user,
+    get_current_user_from_cookie,
 )
 from app.domain.notifications.service import REDIS_SSE_CHANNEL
 
@@ -64,7 +64,7 @@ RECONNECT_DELAY = 5
     },
 )
 async def alert_sse_stream(
-    current_user: Annotated[AuthPayload, Depends(get_current_user)],
+    current_user: Annotated[AuthPayload, Depends(get_current_user_from_cookie)],
     redis: Annotated[AsyncRedis, Depends(get_redis)],
 ):
     """Subscribe to real-time alert events via Server-Sent Events.

@@ -10,6 +10,7 @@ import asyncio
 import logging
 from typing import AsyncGenerator
 
+from fastapi import HTTPException, status
 from redis.asyncio import Redis as AsyncRedis, ConnectionPool
 
 logger = logging.getLogger("crop.redis")
@@ -32,15 +33,25 @@ class RedisManager:
             raise RuntimeError("Redis not initialized. Call initialize() first.")
         return self._client
 
-    async def initialize(self, redis_url: str) -> None:
+    async def initialize(self, redis_url: str, required: bool = True) -> None:
         """Create the connection pool, run a connectivity check, and store the client.
 
         Args:
             redis_url: Redis connection URL (e.g. ``redis://localhost:6379/0``).
+            required: If ``True``, raise on failure (production).
+                      If ``False`` (dev), skip connection entirely — no-op.
 
         Raises:
-            ConnectionError: If Redis is unreachable within 10 seconds.
+            ConnectionError: If Redis is unreachable and ``required=True``.
         """
+        if not required:
+            logger.info(
+                "Redis is not required in this environment. "
+                "Skipping connection. Redis-dependent features (SSE, refresh tokens) "
+                "will be unavailable."
+            )
+            return
+
         logger.info("Initializing Redis connection...")
 
         pool = ConnectionPool.from_url(
@@ -95,5 +106,13 @@ async def get_redis() -> AsyncGenerator[AsyncRedis, None]:
         @router.post("/login")
         async def login(r: AsyncRedis = Depends(get_redis)):
             ...
+
+    Raises:
+        HTTPException 503: If Redis was not initialized (e.g. in dev mode).
     """
+    if not redis_manager.is_initialized:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Redis is not available. This feature requires Redis to be running.",
+        )
     yield redis_manager.client

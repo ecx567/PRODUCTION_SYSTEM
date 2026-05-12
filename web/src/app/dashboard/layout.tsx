@@ -1,32 +1,42 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { getAccessToken } from "@/lib/api";
 import NavSidebar from "@/components/nav-sidebar";
 import TopBar from "@/components/top-bar";
 import { useSSE } from "@/lib/hooks";
+import { loginUser } from "@/lib/api";
+import type { SessionUser } from "@/lib/api";
+
+/** Seed credentials para auto-login */
+const SEED_EMAIL = "admin@crop.local";
+const SEED_PASSWORD = "admin1234";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const [isAuthed, setIsAuthed] = useState(false);
-  const [checking, setChecking] = useState(true);
   const { liveAlerts, isConnected } = useSSE();
+  const [user, setUser] = useState<SessionUser | null>(null);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const token = getAccessToken();
-    if (!token) {
-      router.push("/auth/login");
-    } else {
-      setIsAuthed(true);
-    }
-    setChecking(false);
-  }, [router, pathname]);
+    (async () => {
+      try {
+        const data = await loginUser(SEED_EMAIL, SEED_PASSWORD);
+        const payload = JSON.parse(atob(data.access_token.split(".")[1]));
+        setUser({
+          user_id: payload.sub ?? "",
+          email: payload.email ?? SEED_EMAIL,
+          role: payload.role ?? "admin",
+          tenant_id: payload.tenant_id ?? "",
+        });
+      } catch {
+        // Backend no disponible — seguimos con user null
+      }
+      setChecking(false);
+    })();
+  }, []);
 
   if (checking) {
     return (
@@ -34,10 +44,6 @@ export default function DashboardLayout({
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-leaf-200 border-t-leaf-500" />
       </div>
     );
-  }
-
-  if (!isAuthed) {
-    return null;
   }
 
   return (
@@ -51,6 +57,7 @@ export default function DashboardLayout({
         <TopBar
           alertCount={liveAlerts.filter((a) => !a.acknowledged_at).length}
           sseConnected={isConnected}
+          user={user}
         />
 
         {/* Page content */}
