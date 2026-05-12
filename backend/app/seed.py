@@ -37,17 +37,29 @@ SEED_USERS: list[dict] = [
 ]
 
 SEED_FIELDS: list[dict] = [
-    {"name": "North Field",  "crop_type": "maize", "area_ha": 42.5, "location": "POINT(-79.5 8.9)"},
-    {"name": "South Field",  "crop_type": "rice",  "area_ha": 28.3, "location": "POINT(-79.4 8.8)"},
-    {"name": "East Block",   "crop_type": "banana","area_ha": 35.0, "location": "POINT(-79.3 8.7)"},
-    {"name": "West Block",   "crop_type": "cacao", "area_ha": 18.7, "location": "POINT(-79.6 8.9)"},
+    {"name": "North Field",     "crop_type": "maize",     "area_ha": 42.5, "location": "POINT(-79.5 8.9)"},
+    {"name": "South Field",     "crop_type": "rice",      "area_ha": 28.3, "location": "POINT(-79.4 8.8)"},
+    {"name": "East Block",      "crop_type": "banana",    "area_ha": 35.0, "location": "POINT(-79.3 8.7)"},
+    {"name": "West Block",      "crop_type": "cacao",     "area_ha": 18.7, "location": "POINT(-79.6 8.9)"},
+    {"name": "Highlands Coffee", "crop_type": "coffee",   "area_ha": 22.5, "location": "POINT(-79.7 8.6)"},
+    {"name": "Sugar Mill Plot", "crop_type": "sugarcane", "area_ha": 45.0, "location": "POINT(-79.3 8.5)"},
+    {"name": "Soy Plains",      "crop_type": "soybean",   "area_ha": 60.0, "location": "POINT(-79.8 9.0)"},
+    {"name": "Sunflower Patch", "crop_type": "sunflower", "area_ha": 12.3, "location": "POINT(-79.2 8.4)"},
+    {"name": "Oil Palm Estate", "crop_type": "palm_oil",  "area_ha": 37.8, "location": "POINT(-79.9 8.7)"},
+    {"name": "Cotton Field",    "crop_type": "cotton",    "area_ha": 28.5, "location": "POINT(-79.4 9.1)"},
 ]
 
 SENSOR_MAP: dict[str, dict[str, tuple[float, float]]] = {
-    "maize":  {"temp": (22, 34), "humidity": (50, 85), "soil_moisture": (25, 55), "rain": (0, 15)},
-    "rice":   {"temp": (24, 36), "humidity": (60, 95), "soil_moisture": (30, 70), "rain": (0, 25)},
-    "banana": {"temp": (22, 32), "humidity": (65, 90), "soil_moisture": (35, 65), "rain": (0, 20)},
-    "cacao":  {"temp": (20, 30), "humidity": (70, 95), "soil_moisture": (30, 60), "rain": (0, 18)},
+    "maize":     {"temp": (22, 34), "humidity": (50, 85), "soil_moisture": (25, 55), "rain": (0, 15)},
+    "rice":      {"temp": (24, 36), "humidity": (60, 95), "soil_moisture": (30, 70), "rain": (0, 25)},
+    "banana":    {"temp": (22, 32), "humidity": (65, 90), "soil_moisture": (35, 65), "rain": (0, 20)},
+    "cacao":     {"temp": (20, 30), "humidity": (70, 95), "soil_moisture": (30, 60), "rain": (0, 18)},
+    "coffee":    {"temp": (15, 28), "humidity": (60, 85), "soil_moisture": (25, 55), "rain": (0, 12)},
+    "sugarcane": {"temp": (22, 36), "humidity": (55, 85), "soil_moisture": (30, 60), "rain": (0, 20)},
+    "soybean":   {"temp": (18, 32), "humidity": (45, 80), "soil_moisture": (20, 50), "rain": (0, 15)},
+    "sunflower": {"temp": (18, 34), "humidity": (40, 75), "soil_moisture": (20, 50), "rain": (0, 12)},
+    "palm_oil":  {"temp": (24, 34), "humidity": (70, 95), "soil_moisture": (30, 65), "rain": (0, 22)},
+    "cotton":    {"temp": (20, 36), "humidity": (40, 75), "soil_moisture": (20, 50), "rain": (0, 14)},
 }
 
 TENANT_WIDE_RULES: list[dict] = [
@@ -81,6 +93,36 @@ FIELD_RULES_BY_CROP: dict[str, list[dict]] = {
         {"name": "Cacao: Estrés por Frío",    "metric_type": "temp",          "condition": "lt", "threshold": 18.0, "severity": "warning",  "cooldown_minutes": 30},
         {"name": "Cacao: Baja Humedad Crítica","metric_type": "humidity",     "condition": "lt", "threshold": 70.0, "severity": "warning",  "cooldown_minutes": 30},
         {"name": "Cacao: Riesgo Escoba Bruja", "metric_type": "humidity",     "condition": "gt", "threshold": 90.0, "severity": "warning",  "cooldown_minutes": 60},
+    ],
+    "coffee": [
+        {"name": "Café: Estrés por Frío",     "metric_type": "temp",          "condition": "lt", "threshold": 16.0, "severity": "critical", "cooldown_minutes": 60},
+        {"name": "Café: Alta Humedad — Roya", "metric_type": "humidity",      "condition": "gt", "threshold": 85.0, "severity": "warning",  "cooldown_minutes": 30},
+        {"name": "Café: Baja Humedad",        "metric_type": "humidity",      "condition": "lt", "threshold": 55.0, "severity": "warning",  "cooldown_minutes": 30},
+    ],
+    "sugarcane": [
+        {"name": "Caña: Estrés Térmico Alto", "metric_type": "temp",          "condition": "gt", "threshold": 38.0, "severity": "critical", "cooldown_minutes": 60},
+        {"name": "Caña: Baja Humedad",        "metric_type": "humidity",      "condition": "lt", "threshold": 50.0, "severity": "warning",  "cooldown_minutes": 30},
+        {"name": "Caña: Sequía",              "metric_type": "soil_moisture", "condition": "lt", "threshold": 20.0, "severity": "critical", "cooldown_minutes": 120},
+    ],
+    "soybean": [
+        {"name": "Soja: Estrés por Calor",    "metric_type": "temp",          "condition": "gt", "threshold": 35.0, "severity": "critical", "cooldown_minutes": 60},
+        {"name": "Soja: Exceso de Lluvia",    "metric_type": "rain",          "condition": "gt", "threshold": 18.0, "severity": "warning",  "cooldown_minutes": 60},
+        {"name": "Soja: Baja Humedad",        "metric_type": "humidity",      "condition": "lt", "threshold": 40.0, "severity": "warning",  "cooldown_minutes": 30},
+    ],
+    "sunflower": [
+        {"name": "Girasol: Estrés por Calor", "metric_type": "temp",          "condition": "gt", "threshold": 36.0, "severity": "critical", "cooldown_minutes": 60},
+        {"name": "Girasol: Baja Humedad",     "metric_type": "humidity",      "condition": "lt", "threshold": 35.0, "severity": "critical", "cooldown_minutes": 30},
+        {"name": "Girasol: Alta Humedad",     "metric_type": "humidity",      "condition": "gt", "threshold": 75.0, "severity": "warning",  "cooldown_minutes": 30},
+    ],
+    "palm_oil": [
+        {"name": "Palma: Estrés por Calor",   "metric_type": "temp",          "condition": "gt", "threshold": 36.0, "severity": "critical", "cooldown_minutes": 60},
+        {"name": "Palma: Alta Humedad — PC",  "metric_type": "humidity",      "condition": "gt", "threshold": 90.0, "severity": "warning",  "cooldown_minutes": 30},
+        {"name": "Palma: Baja Humedad",       "metric_type": "humidity",      "condition": "lt", "threshold": 65.0, "severity": "warning",  "cooldown_minutes": 30},
+    ],
+    "cotton": [
+        {"name": "Algodón: Estrés por Calor", "metric_type": "temp",          "condition": "gt", "threshold": 38.0, "severity": "critical", "cooldown_minutes": 60},
+        {"name": "Algodón: Baja Humedad",     "metric_type": "humidity",      "condition": "lt", "threshold": 35.0, "severity": "critical", "cooldown_minutes": 30},
+        {"name": "Algodón: Exceso de Lluvia", "metric_type": "rain",          "condition": "gt", "threshold": 16.0, "severity": "warning",  "cooldown_minutes": 60},
     ],
 }
 
