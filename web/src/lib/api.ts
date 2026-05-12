@@ -391,3 +391,133 @@ export async function acknowledgeAlert(
     { method: "POST" },
   );
 }
+
+// ── Alert Rules CRUD ────────────────────────────────────────────────────
+
+export interface AlertRuleList {
+  items: AlertRuleResponse[];
+  total: number;
+}
+
+export interface AlertRuleCreate {
+  name: string;
+  field_id?: string | null;
+  metric_type: string;
+  condition: string;
+  threshold: number;
+  threshold_max?: number | null;
+  severity: string;
+  enabled: boolean;
+  cooldown_minutes: number;
+}
+
+export interface AlertRuleUpdate {
+  name?: string;
+  field_id?: string | null;
+  metric_type?: string;
+  condition?: string;
+  threshold?: number;
+  threshold_max?: number | null;
+  severity?: string;
+  enabled?: boolean;
+  cooldown_minutes?: number;
+}
+
+export async function getRules(): Promise<AlertRuleList> {
+  return apiFetch<AlertRuleList>("/api/v1/alerts/rules");
+}
+
+export async function createRule(
+  data: AlertRuleCreate,
+): Promise<AlertRuleResponse> {
+  return apiFetch<AlertRuleResponse>("/api/v1/alerts/rules", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateRule(
+  ruleId: string,
+  data: AlertRuleUpdate,
+): Promise<AlertRuleResponse> {
+  return apiFetch<AlertRuleResponse>(`/api/v1/alerts/rules/${ruleId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteRule(ruleId: string): Promise<void> {
+  return apiFetch<void>(`/api/v1/alerts/rules/${ruleId}`, {
+    method: "DELETE",
+  });
+}
+
+// ── Weather ─────────────────────────────────────────────────────
+
+export interface CurrentWeatherResponse {
+  latitude: number;
+  longitude: number;
+  temperature_2m: number;
+  relative_humidity_2m: number;
+  precipitation: number;
+  soil_moisture_0_to_7cm: number;
+  et0_fao_evapotranspiration: number;
+  vapour_pressure_deficit: number;
+  time: string;
+  units: Record<string, string>;
+}
+
+export interface ForecastDay {
+  date: string;
+  temperature_2m_max: number | null;
+  temperature_2m_min: number | null;
+  precipitation_sum: number | null;
+  et0_fao_evapotranspiration: number | null;
+}
+
+export interface ForecastResponse {
+  latitude: number;
+  longitude: number;
+  days: number;
+  units: Record<string, string>;
+  daily: ForecastDay[];
+}
+
+export async function getCurrentWeather(
+  lat: number,
+  lon: number,
+): Promise<CurrentWeatherResponse> {
+  const params = new URLSearchParams();
+  params.set("lat", String(lat));
+  params.set("lon", String(lon));
+  return apiFetch<CurrentWeatherResponse>(
+    `/api/v1/weather/current?${params.toString()}`,
+  );
+}
+
+export async function getWeatherForecast(
+  lat: number,
+  lon: number,
+  days = 7,
+): Promise<ForecastResponse> {
+  const params = new URLSearchParams();
+  params.set("lat", String(lat));
+  params.set("lon", String(lon));
+  params.set("days", String(days));
+  return apiFetch<ForecastResponse>(
+    `/api/v1/weather/forecast?${params.toString()}`,
+  );
+}
+
+// ── Sensor Gaps ────────────────────────────────────────────────
+
+export async function getSensorGaps(
+  fieldId: string,
+  thresholdMinutes = 30,
+): Promise<SensorGap[]> {
+  const params = new URLSearchParams();
+  params.set("threshold_minutes", String(thresholdMinutes));
+  return apiFetch<SensorGap[]>(
+    `/api/v1/fields/${fieldId}/analytics/gaps?${params.toString()}`,
+  );
+}
