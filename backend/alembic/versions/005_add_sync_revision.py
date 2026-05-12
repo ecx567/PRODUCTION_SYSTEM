@@ -22,7 +22,7 @@ def upgrade() -> None:
         "sync_revision",
         sa.Column("id", sa.BigInteger(), nullable=False, server_default="1"),
         sa.Column("revision", sa.BigInteger(), nullable=False, server_default="0"),
-        sa.Column("updated_at", sa.String(32), server_default=sa.text("datetime('now')"), nullable=False),
+        sa.Column("updated_at", sa.String(32), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
 
