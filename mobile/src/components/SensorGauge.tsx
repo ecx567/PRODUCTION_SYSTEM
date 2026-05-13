@@ -58,7 +58,7 @@ export default function SensorGauge({
 
       {/* Value */}
       <View className="flex-row items-baseline">
-        <Text className="text-xl font-bold text-gray-800" style={{ color }}>
+        <Text className="text-xl font-bold" style={{ color }}>
           {displayValue}
         </Text>
         <Text className="text-gray-400 text-xs ml-1">{unit}</Text>

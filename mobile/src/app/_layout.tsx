@@ -1,21 +1,21 @@
 /**
- * Root layout: auth guard and navigation container.
+ * Root layout: no auth guard — public access like the web version.
  *
- * - Checks auth state on mount
- * - Redirects unauthenticated users to /auth/login
- * - Initializes SQLite and sync engine on first load
+ * Initializes the database and sync engine on start, then renders
+ * the tab navigator directly.
+ *
+ * NOTE: On web, native modules are polyfilled via .web.ts versions.
+ * The database is in-memory and ephemeral.
  */
 
+import "../global.css";
 import { useEffect } from "react";
-import { Redirect, Stack } from "expo-router";
+import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useStore } from "@/lib/store";
 import { startSyncEngine } from "@/lib/sync";
 import { getDatabase } from "@/lib/database";
 
 export default function RootLayout() {
-  const isAuthenticated = useStore((s) => s.isAuthenticated);
-
   useEffect(() => {
     // Initialize database and sync engine on app start
     getDatabase().catch((err) =>
@@ -24,19 +24,11 @@ export default function RootLayout() {
     startSyncEngine();
   }, []);
 
-  if (!isAuthenticated) {
-    return <Redirect href="/auth/login" />;
-  }
-
   return (
     <>
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="auth/login"
-          options={{ headerShown: false, animation: "slide_from_left" }}
-        />
       </Stack>
     </>
   );

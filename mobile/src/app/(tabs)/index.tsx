@@ -243,7 +243,7 @@ export default function DashboardScreen() {
               </View>
               {hasCropData ? (
                 <>
-                  <View className="h-[130px] justify-center">
+                  <View className="h-[130px] justify-center -ml-5">
                     <BarChart
                       data={{
                         labels: cropDistData.labels.map((l) => l.slice(0, 4)),
@@ -262,7 +262,6 @@ export default function DashboardScreen() {
                       withVerticalLabels={true}
                       showBarTops={false}
                       fromZero
-                      style={{ marginLeft: -20 }}
                     />
                   </View>
                   <Text className="text-[10px] text-gray-400 text-center mt-1">

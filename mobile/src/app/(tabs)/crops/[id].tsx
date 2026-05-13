@@ -22,7 +22,7 @@ function GddBar({ value, max }: { value: number; max: number }) {
   return (
     <View className="h-5 bg-gray-100 rounded-full overflow-hidden">
       <View
-        className="h-full rounded-full bg-leaf"
+        className="h-full rounded-full bg-leaf flex-1"
         style={{ width: `${pct}%` }}
       />
     </View>
@@ -172,7 +172,7 @@ export default function CropDetailScreen() {
           <Text className="text-base font-semibold text-gray-800 mb-3">
             Progresión de GDD
           </Text>
-          <View className="bg-white rounded-xl p-4 mb-4 shadow-sm border border-gray-100">
+          <View className="bg-white rounded-xl p-4 mb-4 shadow-sm border border-gray-100 overflow-hidden">
             <LineChart
               data={gddChartData}
               width={screenWidth - 56}
@@ -195,7 +195,6 @@ export default function CropDetailScreen() {
                 },
               }}
               bezier
-              style={{ borderRadius: 8 }}
             />
             <Text className="text-[10px] text-gray-400 text-center mt-2">
               Progresión estimada de GDD durante el ciclo del cultivo

@@ -357,69 +357,67 @@ export default function FieldDetailScreen() {
                 Historial de Sensores
               </Text>
 
-              {/* Temperature chart */}
-              <View className="bg-white rounded-xl p-3 mb-3 shadow-sm border border-gray-100">
-                <View className="flex-row items-center mb-2">
-                  <Thermometer size={14} color="#E76F51" />
-                  <Text className="text-xs font-semibold text-gray-600 ml-1.5">
-                    Temperatura (°C)
-                  </Text>
-                </View>
-                <LineChart
-                  data={{
-                    labels: history.labels,
-                    datasets: [
-                      {
-                        data: history.temp,
-                        color: () => "#E76F51",
-                        strokeWidth: 2,
-                      },
-                    ],
-                  }}
-                  width={CHART_W - 16}
-                  height={150}
-                  chartConfig={{
-                    ...chartConfig,
-                    color: (opacity = 1) => `rgba(231, 111, 81, ${opacity})`,
-                  }}
-                  bezier
-                  withInnerLines={false}
-                  withOuterLines={true}
-                  style={{ borderRadius: 8 }}
-                />
-              </View>
+               {/* Temperature chart */}
+               <View className="bg-white rounded-xl p-3 mb-3 shadow-sm border border-gray-100 overflow-hidden">
+                 <View className="flex-row items-center mb-2">
+                   <Thermometer size={14} color="#E76F51" />
+                   <Text className="text-xs font-semibold text-gray-600 ml-1.5">
+                     Temperatura (°C)
+                   </Text>
+                 </View>
+                 <LineChart
+                   data={{
+                     labels: history.labels,
+                     datasets: [
+                       {
+                         data: history.temp,
+                         color: () => "#E76F51",
+                         strokeWidth: 2,
+                       },
+                     ],
+                   }}
+                   width={CHART_W - 16}
+                   height={150}
+                   chartConfig={{
+                     ...chartConfig,
+                     color: (opacity = 1) => `rgba(231, 111, 81, ${opacity})`,
+                   }}
+                   bezier
+                   withInnerLines={false}
+                   withOuterLines={true}
+                 />
+               </View>
 
-              {/* Humidity chart */}
-              <View className="bg-white rounded-xl p-3 mb-4 shadow-sm border border-gray-100">
-                <View className="flex-row items-center mb-2">
-                  <Droplets size={14} color="#7EC8E3" />
-                  <Text className="text-xs font-semibold text-gray-600 ml-1.5">
-                    Humedad (%)
-                  </Text>
-                </View>
-                <LineChart
-                  data={{
-                    labels: history.labels,
-                    datasets: [
-                      {
-                        data: history.humidity,
-                        color: () => "#7EC8E3",
-                        strokeWidth: 2,
-                      },
-                    ],
-                  }}
-                  width={CHART_W - 16}
-                  height={150}
-                  chartConfig={{
-                    ...chartConfig,
-                    color: (opacity = 1) => `rgba(126, 200, 227, ${opacity})`,
-                  }}
-                  bezier
-                  withInnerLines={false}
-                  withOuterLines={true}
-                  style={{ borderRadius: 8 }}
-                />
-              </View>
+               {/* Humidity chart */}
+               <View className="bg-white rounded-xl p-3 mb-4 shadow-sm border border-gray-100 overflow-hidden">
+                 <View className="flex-row items-center mb-2">
+                   <Droplets size={14} color="#7EC8E3" />
+                   <Text className="text-xs font-semibold text-gray-600 ml-1.5">
+                     Humedad (%)
+                   </Text>
+                 </View>
+                 <LineChart
+                   data={{
+                     labels: history.labels,
+                     datasets: [
+                       {
+                         data: history.humidity,
+                         color: () => "#7EC8E3",
+                         strokeWidth: 2,
+                       },
+                     ],
+                   }}
+                   width={CHART_W - 16}
+                   height={150}
+                   chartConfig={{
+                     ...chartConfig,
+                     color: (opacity = 1) => `rgba(126, 200, 227, ${opacity})`,
+                   }}
+                   bezier
+                   withInnerLines={false}
+                   withOuterLines={true}
+                 />
+               </View>
             </>
           )}
 

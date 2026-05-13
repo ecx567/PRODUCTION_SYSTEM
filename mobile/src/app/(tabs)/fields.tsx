@@ -71,10 +71,7 @@ export default function FieldsScreen() {
             />
           </TouchableOpacity>
         )}
-        contentContainerStyle={{
-          padding: 16,
-          flexGrow: 1,
-        }}
+        contentContainerClassName="p-4 flex-grow"
         refreshControl={
           <RefreshControl
             refreshing={fieldsLoading}
