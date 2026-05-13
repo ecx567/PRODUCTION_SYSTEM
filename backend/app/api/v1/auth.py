@@ -338,6 +338,14 @@ async def signup(
             detail="Default tenant not configured. Contact an administrator.",
         )
 
+    # ── Propagate signup country to tenant ─────────────────
+    if body.country and body.country != tenant.country:
+        logger.info(
+            "Updating tenant %s country from %s to %s",
+            tenant.name, tenant.country, body.country,
+        )
+        tenant.country = body.country
+
     # ── Create user ────────────────────────────────────────
     user = User(
         tenant_id=tenant.id,
