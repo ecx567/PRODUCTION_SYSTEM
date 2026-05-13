@@ -6,7 +6,9 @@ import { useSSE } from "@/lib/hooks";
 import {
   getFields,
   getFieldSensors,
+  getHourlyRollup,
   type FieldResponse,
+  type HourlyRollup,
   type SensorReadingResponse,
 } from "@/lib/api";
 import SensorCard from "@/components/devices/sensor-card";
@@ -40,6 +42,8 @@ export default function DevicesPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isFieldLimited, setIsFieldLimited] = useState(false);
+  const [expandedSensorId, setExpandedSensorId] = useState<string | null>(null);
+  const [hourlyDataMap, setHourlyDataMap] = useState<Record<string, HourlyRollup[]>>({});
 
   const fetchData = useCallback(async (isInitial = false) => {
     if (isInitial) {
@@ -62,24 +66,34 @@ export default function DevicesPage() {
         ? activeFields.slice(0, FIELDS_TO_SHOW)
         : activeFields;
 
-      // 3. For each field, fetch latest sensor readings in parallel
+      // 3. For each field, fetch latest sensor readings AND hourly rollup in parallel
       const results = await Promise.allSettled(
         fieldsToQuery.map(async (field) => {
-          const readings = await getFieldSensors(field.id);
-          return readings.map(
-            (r): SensorWithField => ({
-              ...r,
-              fieldName: field.name,
-            }),
-          );
+          const [readings, hourly] = await Promise.all([
+            getFieldSensors(field.id),
+            getHourlyRollup(field.id),
+          ]);
+          return {
+            fieldId: field.id,
+            fieldName: field.name,
+            readings: readings.map(
+              (r): SensorWithField => ({
+                ...r,
+                fieldName: field.name,
+              }),
+            ),
+            hourly,
+          };
         }),
       );
 
       // 4. Flatten results (only fulfilled ones)
       const allSensors: SensorWithField[] = [];
+      const hourlyMap: Record<string, HourlyRollup[]> = {};
       for (const result of results) {
         if (result.status === "fulfilled") {
-          allSensors.push(...result.value);
+          allSensors.push(...result.value.readings);
+          hourlyMap[result.value.fieldId] = result.value.hourly;
         }
       }
       // Sensors arrive newest-first (sensors endpoint returns latest per sensor),
@@ -91,6 +105,7 @@ export default function DevicesPage() {
       });
 
       setSensors(allSensors);
+      setHourlyDataMap(hourlyMap);
       setLastUpdated(new Date());
     } catch (err: unknown) {
       const msg =
@@ -155,6 +170,15 @@ export default function DevicesPage() {
               key={`${sensor.sensor_id}-${sensor.field_id}`}
               reading={sensor}
               fieldName={sensor.fieldName}
+              isExpanded={expandedSensorId === sensor.sensor_id}
+              onToggle={() =>
+                setExpandedSensorId(
+                  expandedSensorId === sensor.sensor_id
+                    ? null
+                    : sensor.sensor_id,
+                )
+              }
+              hourlyRollup={hourlyDataMap[sensor.field_id] ?? []}
             />
           ))}
         </div>
