@@ -1,196 +1,420 @@
-# Crop Production System
+# 🌾 Crop Production System
 
-Digital agriculture management platform for real-time crop monitoring, IoT sensor ingestion, ML-driven recommendations, and yield forecasting.
+**Plataforma de agricultura digital** para monitoreo de cultivos en tiempo real, ingesta de sensores IoT, recomendaciones basadas en ML y predicción de rendimientos.
 
-## Overview
+> **Versión:** 0.1.0 · **Estado:** Producción (web) / En desarrollo (mobile)
 
-Crop Production System helps farmers monitor field conditions, receive irrigation/fertilization recommendations, track pest risks, and predict yields — all backed by IoT sensor data and machine learning models.
+---
 
-The system supports four crop types: **banana**, **maize**, **cacao**, and **rice** — with extensible architecture for additional crops.
+## 📸 Dashboard
 
-### v0.1 Features
+| Vista previa | Descripción |
+|---|---|
+| ![Dashboard Overview](web/public/screenshots/dashboard-overview.png) | **Dashboard principal** — resumen con 18 campos activos, 53 sensores online, alertas en vivo |
+| ![Dashboard Metrics](web/public/screenshots/dashboard-metrics.png) | **Tarjetas de métricas** — campos activos, alertas, sensores, última sincronización |
+| ![Dashboard Fields](web/public/screenshots/dashboard-fields.png) | **Grid de campos** — vista rápida de todos los campos con cultivo y hectáreas |
+| ![Field Detail](web/public/screenshots/field-detail.png) | **Detalle de campo** — métricas en tiempo real: temperatura, humedad, suelo, lluvia |
+| ![Field Charts](web/public/screenshots/field-charts.png) | **Gráficos** — tendencia de temperatura y humedad (últimas 72h) |
+| ![Field Sensors](web/public/screenshots/field-sensors.png) | **Tabla de sensores** — lecturas individuales por sensor con valores en tiempo real |
+| ![Field Recommendations](web/public/screenshots/field-recommendations.png) | **Recomendaciones** — riego (FAO-56), fertilización y riesgo de plagas |
+| ![Field Yield](web/public/screenshots/field-yield.png) | **Predicción de rendimiento** — forecast con intervalo de confianza y features usadas |
+| ![Fields List](web/public/screenshots/fields-list.png) | **Lista completa de campos** — 18 campos con filtros por cultivo |
+| ![Alerts Page](web/public/screenshots/alerts-page.png) | **Alertas** — historial de eventos con severidad y acknowledge |
+| ![Rules Page](web/public/screenshots/rules-page.png) | **Reglas de alerta** — 54 reglas preconfiguradas por cultivo y condición |
+| ![Analytics Page](web/public/screenshots/analytics-page.png) | **Analíticas** — tendencias históricas y predicciones ML |
+| ![Devices Page](web/public/screenshots/devices-page.png) | **Dispositivos IoT** — sensores, gateways y estado de conexión SSE |
 
-- **Real-time monitoring** via SSE (Server-Sent Events) — live sensor data streaming to the dashboard
-- **Smart alert rules** — 20 preconfigured rules (temperature, humidity, soil moisture, rain) with per-crop thresholds
-- **Field management** — organize fields by crop type with area and planting dates
-- **JWT authentication** — RS256 with refresh token rotation
-- **IoT ingestion pipeline** — MQTT-based sensor data processing with Redis pub/sub
-- **Seed data** — demo scripts to bootstrap fields, sensors, and alert rules for testing
+---
 
-## Architecture
+## 🏗️ Arquitectura
 
 ```
-┌─────────────┐     ┌──────────────┐     ┌──────────────┐
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
 │  Mobile App  │     │  Web Console │     │   MQTT IoT   │
 │  (Expo/RN)   │     │  (Next.js)   │     │   Sensors    │
+│  ⚠️ En pro.  │     │  🟢 Live     │     │   (futuro)   │
 └──────┬───────┘     └──────┬───────┘     └──────┬───────┘
-       │                    │                    │
-       └──────────┬─────────┴─────────┬──────────┘
-                  │                   │
-         ┌────────▼────────┐   ┌─────▼──────┐
-         │   FastAPI REST  │   │  EMQX MQTT │
-         │   + SSE Events  │   │   Broker   │
-         └────────┬────────┘   └─────┬──────┘
-                  │                  │
-         ┌────────▼──────────────────▼──────┐
-         │        Ingestion Service         │
-         │   (JSON Schema + Poison Pill)    │
-         └────────┬─────────────────────────┘
-                  │
-     ┌────────────┼────────────┬──────────────┐
-     ▼            ▼            ▼              ▼
-┌─────────┐ ┌─────────┐ ┌──────────┐ ┌──────────────┐
-│Timescale│ │  Redis  │ │  SQLite  │ │  ML Pipeline  │
-│   DB    │ │  Pub/Sub│ │(Offline) │ │ RF/XGBoost   │
-└─────────┘ └─────────┘ └──────────┘ └──────────────┘
+       │                    │                     │
+       └──────────┬─────────┴──────────┬──────────┘
+                  │                    │
+         ┌───────▼────────┐    ┌──────▼──────┐
+         │   FastAPI REST │    │  EMQX MQTT  │
+         │  + SSE Events  │    │   Broker    │
+         └───────┬────────┘    └──────┬──────┘
+                 │                    │
+         ┌───────▼────────────────────▼──────┐
+         │        Ingestion Service          │
+         │   (JSON Schema + Poison Pill)     │
+         └───────┬───────────────────────────┘
+                 │
+     ┌───────────┼────────────┬───────────────┐
+     ▼           ▼            ▼               ▼
+┌──────────┐ ┌────────┐ ┌──────────┐ ┌──────────────┐
+│Timescale │ │ Redis  │ │  SQLite  │ │  ML Pipeline │
+│   DB     │ │Pub/Sub │ │(Offline) │ │ RF/XGBoost   │
+└──────────┘ └────────┘ └──────────┘ └──────────────┘
 ```
 
-## Tech Stack
+### 🔄 Flujo de datos
 
-| Component        | Technology                              |
-|------------------|-----------------------------------------|
-| Backend API      | Python 3.11, FastAPI                    |
-| Database         | TimescaleDB (PostgreSQL + time-series)  |
-| Cache / Pub/Sub  | Redis                                   |
-| IoT Broker       | EMQX (MQTT)                             |
-| Web Dashboard    | Next.js 15, React, Tailwind CSS 4       |
-| Mobile App       | React Native, Expo SDK 52               |
-| Machine Learning | scikit-learn, XGBoost, pandas           |
-| Auth             | JWT RS256 with refresh rotation         |
-| Sync Protocol    | Pull-then-push, LWW integer revisions   |
+1. **Sensores IoT** → EMQX (MQTT) → Ingestion Service → TimescaleDB + Redis Pub/Sub
+2. **Dashboard web** → FastAPI REST API → TimescaleDB (lecturas) + Redis (caché)
+3. **Alertas en vivo** → SSE (Server-Sent Events) desde FastAPI → navegador
+4. **Recomendaciones** → Motor FAO-56 (riego) + reglas de fertilización + GDD (plagas)
+5. **Predicciones** → Modelos ML (Random Forest / XGBoost) entrenados en `ml/`
+6. **App mobile** → Sync offline-first con protocolo pull-then-push + SQLite local
 
-## Project Structure
+---
+
+## 🧰 Tech Stack
+
+| Componente          | Tecnología                                   |
+|---------------------|----------------------------------------------|
+| **Backend API**     | Python 3.11+, FastAPI, SQLAlchemy (async)    |
+| **Base de datos**   | TimescaleDB (PostgreSQL + time-series)       |
+| **Cache / Pub/Sub** | Redis                                        |
+| **IoT Broker**      | EMQX (MQTT) — opcional                      |
+| **Web Dashboard**   | Next.js 15, React 19, Tailwind CSS 4        |
+| **Mobile App**      | React Native, Expo SDK 52 (⚠️ en proceso)   |
+| **Machine Learning**| scikit-learn, XGBoost, pandas               |
+| **Autenticación**   | JWT RS256 con refresh token rotation         |
+| **Sync offline**    | Pull-then-push, LWW integer revisions        |
+| **Migraciones**     | Alembic (9 versiones)                       |
+
+---
+
+## 📁 Estructura del proyecto
 
 ```
-├── backend/              # FastAPI application
-│   ├── app/
-│   │   ├── api/v1/       # REST endpoints (auth, sse, mobile sync)
-│   │   ├── core/         # Database, MQTT, Redis clients
-│   │   └── domain/       # Business logic modules
-│   │       ├── auth/           # JWT auth, RBAC
-│   │       ├── fields/         # Field CRUD
-│   │       ├── ingestion/      # IoT data pipeline
-│   │       ├── analytics/      # Aggregations + ML predictions
-│   │       ├── notifications/  # Alert engine
-│   │       ├── recommendations/# FAO-56 irrigation, fertilization
-│   │       └── sync/          # Mobile offline-first sync
-│   ├── alembic/          # Database migrations (5 versions)
-│   └── tests/            # 132+ tests (pytest)
-├── web/                  # Next.js 15 dashboard
-│   └── src/
-│       ├── app/          # Pages (dashboard, fields, analytics, devices, rules, alerts, users, settings, iot)
-│       ├── components/   # Reusable components (sidebar, topbar, lock-screen)
-│       └── lib/          # API client, React hooks (SSE, alerts)
-├── mobile/               # React Native Expo app
-│   └── src/
-│       ├── app/          # 5 screens (login, fields, alerts, etc.)
-│       ├── components/   # 6 components
-│       └── lib/          # API client, SQLite DB, Zustand store, Sync
-├── ml/                   # ML notebooks and training scripts
-│   ├── notebooks/        # EDA, feature engineering, model training
-│   └── train.py          # CLI training script
-└── research/             # Crop case studies and production system analysis
+📦 PRODUCTION_SYSTEM
+├── 📁 backend/                    # FastAPI (Python)
+│   ├── 📁 app/
+│   │   ├── 📁 api/v1/             # Endpoints REST
+│   │   ├── 📁 core/               # DB, MQTT, Redis, Scheduler
+│   │   └── 📁 domain/             # Lógica de negocio
+│   │       ├── auth/              # JWT, RBAC
+│   │       ├── fields/            # CRUD de campos
+│   │       ├── ingestion/         # Pipeline IoT
+│   │       ├── analytics/         # Agregaciones + ML
+│   │       ├── notifications/     # Motor de alertas
+│   │       ├── recommendations/   # FAO-56, fertilización, plagas
+│   │       └── sync/              # Sync offline-first
+│   ├── 📁 alembic/                # Migraciones (9 versiones)
+│   ├── 📁 tests/                  # Tests (pytest)
+│   └── requirements.txt
+│
+├── 📁 web/                        # Next.js 15 Dashboard
+│   ├── 📁 public/
+│   │   └── 📁 screenshots/        # Capturas del dashboard
+│   └── 📁 src/
+│       ├── 📁 app/                # Páginas (dashboard, fields, alerts, rules, etc.)
+│       │   └── 📁 dashboard/
+│       │       ├── page.tsx       # Dashboard principal
+│       │       ├── fields/        # Lista + detalle de campos
+│       │       ├── alerts/        # Alertas
+│       │       ├── rules/         # Reglas de alerta
+│       │       ├── analytics/     # Analíticas
+│       │       ├── devices/       # Dispositivos IoT
+│       │       └── ...
+│       ├── 📁 components/         # Componentes reutilizables
+│       └── 📁 lib/                # API client, hooks, mock-data
+│
+├── 📁 mobile/                     # React Native (⚠️ en proceso)
+│   └── 📁 src/
+│       ├── 📁 app/                # Pantallas
+│       ├── 📁 components/         # Componentes
+│       └── 📁 lib/                # SQLite, sync, API client
+│
+├── 📁 ml/                         # Machine Learning
+│   ├── 📁 notebooks/              # EDA, feature engineering
+│   └── train.py                   # CLI de entrenamiento
+│
+├── 📁 research/                   # Investigación de cultivos
+├── 📁 scripts/                    # Scripts de utilidad
+├── docker-compose.yml             # TimescaleDB + Redis
+├── dev.ps1                        # Dev server (todo en uno)
+└── run_backend.py                 # Backend launcher
 ```
 
-## Getting Started
+---
 
-### Prerequisites
+## 🚀 Cómo ejecutar el proyecto
 
-- Python 3.11+
-- Node.js 20+
-- Docker (for EMQX, TimescaleDB, Redis)
+### 1️⃣ Requisitos previos
 
-### Backend
+| Herramienta | Versión | Cómo verificar |
+|-------------|---------|----------------|
+| **Docker Desktop** | ≥ 24+ | `docker --version` |
+| **Python** | ≥ 3.11 | `python --version` |
+| **Node.js** | ≥ 20 | `node --version` |
+| **PowerShell** | ≥ 5.1 | `$PSVersionTable.PSVersion` |
 
-```bash
-cd backend
-python -m venv .venv
-.venv\Scripts\activate     # Windows
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-```
+### 2️⃣ Infraestructura (Docker)
 
-### Infrastructure (Docker)
+```powershell
+# Desde la raíz del proyecto:
+cd D:\sistema\ de\ producción
 
-```bash
+# Levantar TimescaleDB + Redis
 docker compose up -d
+
+# Verificar que estén saludables:
+docker ps
+# Deberías ver: crop-timescaledb (healthy), crop-redis (healthy)
 ```
 
-Starts EMQX (MQTT broker), TimescaleDB, and Redis.
+> ⚠️ TimescaleDB necesita unos segundos para estar lista. Esperá a que el health check pase a `healthy`.
 
-### Web Dashboard
+### 3️⃣ Backend (FastAPI)
 
-```bash
-cd web
+```powershell
+# Ir al directorio del backend
+cd D:\sistema\ de\ producción\backend
+
+# Crear y activar entorno virtual (solo primera vez)
+python -m venv .venv
+.\.venv\Scripts\activate
+
+# Instalar dependencias (solo primera vez)
+pip install -r requirements.txt
+pip install bcrypt==4.0.1   # necesario para passlib
+
+# Configurar variable de entorno
+$env:DATABASE_URL = "postgresql+asyncpg://cropuser:cropsecret@localhost:5432/cropproduction"
+$env:PYTHONPATH = "D:\sistema de producción\backend"
+
+# Correr migraciones (solo primera vez o después de cambios)
+alembic upgrade head
+
+# Iniciar servidor
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+El backend arranca automáticamente con **seed data**:
+- 1 tenant (Default Farm)
+- 2 usuarios (admin + farmer)
+- **18 campos** agrícolas con distintos cultivos
+- **2988 lecturas de sensores** (166 por campo)
+- **54 reglas de alerta** preconfiguradas por cultivo
+- Conexión SSE lista para streaming en vivo
+
+📋 **Verificar que funciona:** http://localhost:8000/docs (Swagger UI) o `curl http://localhost:8000/api/v1/fields?page_size=2`
+
+### 4️⃣ Web Dashboard (Next.js)
+
+```powershell
+# En otra terminal:
+cd D:\sistema\ de\ producción\web
+
+# Instalar dependencias (solo primera vez)
 npm install
-npm run dev
+
+# Iniciar servidor de desarrollo
+node node_modules/next/dist/bin/next dev -p 3000
 ```
 
-### Mobile App
+🌐 **Abrir en el navegador:** http://localhost:3000/dashboard
 
-```bash
-cd mobile
-npm install --legacy-peer-deps
-npx expo start
+> 💡 **Mock data:** Si el backend no está disponible, podés activar datos de demostración:
+> 1. Editá `web/.env.local`
+> 2. Agregá `NEXT_PUBLIC_USE_MOCK=true`
+> 3. Reiniciá el servidor Next.js
+> Esto muestra 18 campos ficticios, alertas y predicciones sin necesidad del backend.
+
+### 5️⃣ Script todo-en-uno
+
+```powershell
+# Desde la raíz del proyecto (requiere Docker corriendo):
+.\dev.ps1              # Full stack con Docker
+.\dev.ps1 -NoDocker    # Solo backend + web (usa SQLite)
+.\dev.ps1 -NoWeb       # Solo backend
 ```
 
-### Seed Demo Data
+---
 
-Populate the database with sample fields, sensors, and alert rules:
+## 🧪 Seed Data
 
-```bash
-# Start the backend first, then:
-python run_backend.py          # Start backend + seed
-# Or manually:
-python seed_8000.py            # Seed fields and sensors
-python seed_alerts.py          # Seed 20 alert rules with events
+El backend se seeda automáticamente al iniciar. Si necesitás resetear la base de datos:
+
+```powershell
+# Limpiar BD (desde la raíz del proyecto)
+docker compose exec -T timescaledb psql -U cropuser -d cropproduction -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+# Correr migraciones de nuevo
+cd D:\sistema\ de\ producción\backend
+$env:DATABASE_URL = "postgresql+asyncpg://cropuser:cropsecret@localhost:5432/cropproduction"
+$env:PYTHONPATH = "D:\sistema de producción\backend"
+alembic upgrade head
+
+# Iniciar backend — el seed se ejecuta automáticamente
 ```
 
-### Machine Learning
-
-```bash
-cd ml
-python train.py --crop maize --model rf
+También hay scripts manuales en la raíz:
+```powershell
+python seed_8000.py     # Seed campos y sensores
+python seed_alerts.py   # Seed reglas de alerta
 ```
 
-## Dashboard Pages
+---
 
-| Page | Route | Description |
-|------|-------|-------------|
-| **Dashboard** | `/dashboard` | Real-time metrics, field summaries, sensor status |
-| **Fields** | `/dashboard/fields` | Field registry with crop types, area, planted dates |
-| **Devices** | `/dashboard/devices` | IoT sensor registry, gateways, SSE connection status |
-| **Analytics** | `/dashboard/analytics` | Historical trends, ML predictions, pest risk (in development) |
-| **Alerts** | `/dashboard/alerts` | Event log with severity filters and acknowledgment |
-| **Rules** | `/dashboard/rules` | 20 alert rule definitions with severity and cooldowns |
-| **Users** | `/dashboard/users` | User management (in development) |
+## 🧭 Páginas del Dashboard
 
-## API Endpoints
+| Página | Ruta | Descripción |
+|--------|------|-------------|
+| **Dashboard** | `/dashboard` | Resumen con tarjetas de métricas, alertas recientes y grid de campos |
+| **Fields** | `/dashboard/fields` | Lista completa de 18 campos con filtros; cada campo tiene detalle con sensores, charts, recomendaciones y yield |
+| **Field Detail** | `/dashboard/fields/[id]` | Vista detallada: métricas en vivo, tendencias 72h, tabla de sensores, recomendaciones, predicción |
+| **Alerts** | `/dashboard/alerts` | Historial de eventos con filtro por severidad y acknowledge |
+| **Rules** | `/dashboard/rules` | 54 reglas de alerta preconfiguradas con severidad y cooldown |
+| **Analytics** | `/dashboard/analytics` | Tendencias históricas y predicciones ML |
+| **Devices** | `/dashboard/devices` | Registro de sensores IoT, gateways, estado de conexión SSE |
+| **Users** | `/dashboard/users` | Gestión de usuarios (en desarrollo) |
+| **Settings** | `/dashboard/settings` | Configuración del perfil y preferencias |
 
-| Method | Path                           | Description                    |
-|--------|--------------------------------|--------------------------------|
-| POST   | `/api/v1/auth/login`           | Login (JWT RS256)              |
-| POST   | `/api/v1/auth/refresh`         | Refresh token                  |
-| GET    | `/api/v1/fields`               | List tenant fields             |
-| POST   | `/api/v1/fields`               | Create field                   |
-| GET    | `/api/v1/fields/{id}`          | Field details                  |
-| GET    | `/api/v1/fields/{id}/sensors`  | Latest sensor readings         |
-| GET    | `/api/v1/fields/{id}/analytics/summary` | Analytics summary   |
-| GET    | `/api/v1/alerts/events`        | List alert events              |
-| POST   | `/api/v1/sse/stream`           | Server-Sent Events stream      |
-| POST   | `/api/v1/mobile/sync`          | Offline sync protocol          |
-| GET    | `/health`                      | Health check                   |
+---
 
-## Testing
+## 📡 API Endpoints
 
-```bash
-cd backend
-pytest -v
+### Autenticación
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/api/v1/auth/login` | Login (JWT RS256) |
+| POST | `/api/v1/auth/refresh` | Refresh token |
+
+### Campos
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/fields` | Listar campos (paginación por cursor) |
+| POST | `/api/v1/fields` | Crear campo |
+| GET | `/api/v1/fields/{id}` | Detalle de campo |
+
+### Sensores
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/fields/{id}/sensors` | Últimas lecturas de sensores |
+| GET | `/api/v1/fields/{id}/sensors/history` | Historial de lecturas |
+
+### Analíticas
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/fields/{id}/analytics/summary` | Resumen analítico |
+| GET | `/api/v1/fields/{id}/analytics/hourly` | Rollup horario (charts) |
+| GET | `/api/v1/fields/{id}/analytics/gaps` | Brechas de sensores |
+| GET | `/api/v1/fields/{id}/predictions/yield` | Predicción de rendimiento |
+| GET | `/api/v1/fields/{id}/predictions/history` | Historial de predicciones |
+
+### Alertas
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/alerts/events` | Listar eventos de alerta |
+| POST | `/api/v1/alerts/events/{id}/acknowledge` | Reconocer alerta |
+| GET | `/api/v1/alerts/rules` | Listar reglas |
+| POST | `/api/v1/alerts/rules` | Crear regla |
+| PUT | `/api/v1/alerts/rules/{id}` | Actualizar regla |
+| DELETE | `/api/v1/alerts/rules/{id}` | Eliminar regla |
+
+### Streaming y Sync
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/alerts/stream` | SSE — alertas en tiempo real |
+| POST | `/api/v1/mobile/sync` | Sync offline-first (mobile) |
+
+### Recomendaciones
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/fields/{id}/recommendations` | Recomendaciones en tiempo real |
+| GET | `/api/v1/recommendations` | Recomendaciones almacenadas |
+| PATCH | `/api/v1/recommendations/{id}/status` | Actualizar estado (acknowledge/dismiss/apply) |
+
+### Weather
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/weather/current` | Clima actual |
+| GET | `/api/v1/weather/forecast` | Pronóstico (7 días) |
+
+### Crop Profiles
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/crop-profiles` | Perfiles de cultivo (FAO-56 coefficients) |
+
+### Salud
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/health` | Health check |
+
+---
+
+## 🧪 Testing
+
+```powershell
+cd D:\sistema\ de\ producción\backend
+pytest -v           # 132+ tests
+pytest -v -x        # Parar en el primer fallo
+pytest -v --cov     # Con cobertura
 ```
-## Research
 
-See the [research](./research/) directory for crop case studies and production system analyses.
+---
 
-## License
+## 📱 Mobile App (⚠️ En desarrollo)
 
-Private — internal development project.
+La app móvil está en construcción activa. Estado actual:
+
+| Feature | Estado |
+|---------|--------|
+| Dashboard con campos | ✅ Completado |
+| NativeWind (Tailwind) | ✅ Completado |
+| SQLite offline-first | ✅ Completado |
+| Sync con backend | ✅ Completado |
+| Alertas | ✅ Completado |
+| Charts y gráficos | ✅ Completado |
+| Web preview | ✅ Completado |
+| Testing en dispositivo real | 🔄 Pendiente |
+| Push notifications | 📋 Planificado |
+| Escaneo QR de sensores | 📋 Planificado |
+
+```powershell
+# Para probar la web preview del mobile:
+cd D:\sistema\ de\ producción\mobile
+node node_modules/tailwindcss/lib/cli.js -i src/global.css -o src/global.generated.css
+node node_modules/expo/bin/cli start --web
+```
+
+---
+
+## 🤖 Machine Learning
+
+```powershell
+cd D:\sistema\ de\ producción\ml
+python train.py --crop maize --model rf    # Random Forest
+python train.py --crop maize --model xgb   # XGBoost
+```
+
+Los notebooks de exploración están en `ml/notebooks/`.
+
+---
+
+## 🔧 Solución de problemas
+
+| Problema | Causa | Solución |
+|----------|-------|----------|
+| `ERR_CONNECTION_REFUSED` en API | Backend no iniciado | `python -m uvicorn app.main:app --port 8000` |
+| `@tailwind` unknown at-rule | CSS no compilado | `node node_modules/tailwindcss/lib/cli.js -i src/global.css -o src/global.generated.css` |
+| Dashboard muestra 0 datos | Backend caído o mock no activo | Iniciar backend o activar `NEXT_PUBLIC_USE_MOCK=true` |
+| Puerto 3000/8000 ocupado | Proceso anterior vivo | `taskkill /F /IM node.exe` + reiniciar |
+| MQTT connection failed | EMQX no instalado | No crítico — el sistema funciona sin MQTT |
+| `bcrypt` error al iniciar | Versión incompatible | `pip install bcrypt==4.0.1` |
+| `alembic upgrade head` falla | BD PostgreSQL sucia | Limpiar schema: `DROP SCHEMA public CASCADE; CREATE SCHEMA public;` |
+
+---
+
+## 📚 Más información
+
+- [Documentación del dashboard](web/src/app/dashboard/documentation/page.tsx) — guía integrada en la app
+- [Research](research/) — case studies de cultivos y análisis de sistemas de producción
+- [API Docs](http://localhost:8000/docs) — Swagger UI (con el backend corriendo)
+
+---
+
+## 📄 Licencia
+
+**Privado** — proyecto interno de desarrollo.
