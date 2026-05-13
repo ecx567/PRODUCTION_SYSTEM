@@ -57,11 +57,31 @@ async def list_fields(
         default=20, ge=1, le=100,
         description="Number of fields per page (1–100).",
     ),
+    q: str | None = Query(
+        default=None,
+        max_length=100,
+        description="Search query — ILIKE match on name and crop_type.",
+    ),
+    country: str | None = Query(
+        default=None,
+        max_length=100,
+        description="Filter by tenant country (exact match).",
+    ),
+    region: str | None = Query(
+        default=None,
+        max_length=100,
+        description="Filter by tenant region (exact match).",
+    ),
 ) -> FieldList:
     """Return a paginated list of active (non-deleted) fields for the current tenant.
 
     Results are ordered by ``created_at`` descending (newest first).
     Use the ``next_cursor`` field in the response to fetch the next page.
+
+    Optional filters:
+        - ``q``: ILIKE search on field name and crop type.
+        - ``country``: Filter by the tenant's country (exact match).
+        - ``region``: Filter by the tenant's region (exact match).
     """
     tenant_id = UUID(current_user.tenant_id)
     return await _fields_service.list_fields(
@@ -69,6 +89,9 @@ async def list_fields(
         db=db,
         cursor=cursor,
         page_size=page_size,
+        q=q,
+        country=country,
+        region=region,
     )
 
 

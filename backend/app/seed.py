@@ -28,7 +28,7 @@ logger = logging.getLogger("crop.seed")
 # ── Seed data ───────────────────────────────────────────────
 
 SEED_TENANTS: list[dict] = [
-    {"name": "Default Farm"},
+    {"name": "Default Farm", "country": "EC", "region": "Sierra"},
 ]
 
 SEED_USERS: list[dict] = [
@@ -205,7 +205,11 @@ async def _seed_tenants(db: AsyncSession) -> dict[str, Tenant]:
         result = await db.execute(select(Tenant).where(Tenant.name == name))
         tenant = result.scalar_one_or_none()
         if tenant is None:
-            tenant = Tenant(name=name)
+            tenant = Tenant(
+                name=name,
+                country=spec.get("country", "EC"),
+                region=spec.get("region"),
+            )
             db.add(tenant)
             await db.flush()
             logger.info("  Created tenant: %s (id=%s)", name, tenant.id)

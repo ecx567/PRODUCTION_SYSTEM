@@ -1,6 +1,6 @@
 "use client";
 
-import type { SensorReadingResponse } from "@/lib/api";
+import type { HourlyRollup, SensorReadingResponse } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
   Thermometer,
@@ -9,13 +9,27 @@ import {
   CloudRain,
   Clock,
   AlertTriangle,
+  ChevronDown,
 } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+} from "recharts";
 
 interface SensorCardProps {
   /** Sensor reading data */
   reading: SensorReadingResponse;
   /** Human-readable field name this sensor belongs to */
   fieldName?: string;
+  /** Whether this card is currently expanded */
+  isExpanded?: boolean;
+  /** Called when the card header is clicked */
+  onToggle?: () => void;
+  /** Hourly rollup data for sparklines */
+  hourlyRollup?: HourlyRollup[];
 }
 
 /** Stale threshold in minutes — readings older than this get a warning badge */
@@ -79,6 +93,13 @@ const metricConfig = [
   { key: "rain" as const, icon: CloudRain, label: "Rainfall", unit: "mm", color: "text-sky-500" },
 ];
 
+const sparklineMetrics = [
+  { key: "avg_temp" as const, label: "Temp", color: "#e76f51" },
+  { key: "avg_humidity" as const, label: "Humidity", color: "#7ec8e3" },
+  { key: "avg_soil_moisture" as const, label: "Soil", color: "#2d6a4f" },
+  { key: "total_rain" as const, label: "Rain", color: "#6f5b43" },
+];
+
 const signalBarColors: Record<string, string> = {
   excellent: "bg-leaf-500",
   good: "bg-sky-500",
@@ -86,7 +107,13 @@ const signalBarColors: Record<string, string> = {
   poor: "bg-danger-500",
 };
 
-export default function SensorCard({ reading, fieldName }: SensorCardProps) {
+export default function SensorCard({
+  reading,
+  fieldName,
+  isExpanded = false,
+  onToggle,
+  hourlyRollup = [],
+}: SensorCardProps) {
   const sensorIdShort = reading.sensor_id.slice(0, 8);
   const stale = isStale(reading.time);
   const signal = computeSignalQuality(reading);
@@ -100,8 +127,12 @@ export default function SensorCard({ reading, fieldName }: SensorCardProps) {
         stale && "border-sunlight-300 bg-sunlight-50/40",
       )}
     >
-      {/* ── Header: sensor ID + field name + stale badge ── */}
-      <div className="flex items-start justify-between gap-2">
+      {/* ── Header: sensor ID + field name + stale badge (clickable) ── */}
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-start justify-between gap-2 text-left"
+      >
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h3 className="truncate text-sm font-semibold text-leaf-700">
@@ -137,7 +168,7 @@ export default function SensorCard({ reading, fieldName }: SensorCardProps) {
             />
           ))}
         </div>
-      </div>
+      </button>
 
       {/* ── Metric grid (2×2) ── */}
       <div className="grid grid-cols-2 gap-2">
@@ -164,6 +195,69 @@ export default function SensorCard({ reading, fieldName }: SensorCardProps) {
             </div>
           );
         })}
+      </div>
+
+      {/* ── Expanded section: sparkline charts ── */}
+      <div
+        className={cn(
+          "overflow-hidden transition-all duration-300 ease-in-out",
+          isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
+        )}
+      >
+        {isExpanded && (
+          <div className="border-t border-leaf-100 pt-3">
+            <div className="mb-2 flex items-center gap-1">
+              <ChevronDown className="h-3 w-3 text-soil-400" />
+              <h4 className="text-xs font-semibold text-soil-500">
+                24h Trend
+              </h4>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {sparklineMetrics.map((metric) => {
+                const data = hourlyRollup.map((h) => ({
+                  time: new Date(h.hour).toLocaleTimeString([], {
+                    hour: "2-digit",
+                  }),
+                  value: h[metric.key],
+                }));
+                const allNull = data.every((d) => d.value === null);
+                if (allNull) {
+                  return (
+                    <div
+                      key={metric.key}
+                      className="rounded-lg bg-leaf-50/50 p-2 text-center text-xs text-soil-400"
+                    >
+                      No data
+                    </div>
+                  );
+                }
+                return (
+                  <div
+                    key={metric.key}
+                    className="rounded-lg bg-leaf-50/50 p-2"
+                  >
+                    <p className="mb-1 text-[10px] font-medium text-soil-400">
+                      {metric.label}
+                    </p>
+                    <ResponsiveContainer width="100%" height={40}>
+                      <LineChart data={data}>
+                        <Line
+                          type="monotone"
+                          dataKey="value"
+                          stroke={metric.color}
+                          strokeWidth={1.5}
+                          dot={false}
+                        />
+                        <XAxis dataKey="time" hide />
+                        <YAxis hide domain={["dataMin - 1", "dataMax + 1"]} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Footer: last seen + validation status ── */}

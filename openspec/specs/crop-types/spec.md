@@ -96,6 +96,33 @@ The system MUST update the seed script to create fields with the new crop types 
 - **Backward compatibility**: Existing API consumers sending "banana"/"maize"/"cacao"/"rice" MUST continue to work
 - **Extensibility**: Future crop additions MUST require only changing `ALLOWED_CROP_TYPES` set — no migration needed
 
+### R6: Crop Icons — Unique Visual Identifiers
+
+The system MUST provide unique emoji identifiers for all supported crop types. A shared `CROP_EMOJIS` map MUST be maintained in `web/src/lib/crop-icons.ts` covering all 18 crop types from `ALLOWED_CROP_TYPES` with unique emojis (no two crops share the same emoji). Any unknown crop type MUST fall back to `"🌱"` (seedling emoji).
+
+#### Scenario: Happy path — known crop displays unique emoji
+- GIVEN the crop-icons.ts file is created with 18 unique entries
+- WHEN a field with `crop_type='banana'` renders
+- THEN the display shows `🍌` (unique banana emoji)
+
+#### Scenario: Edge case — unknown crop type
+- GIVEN a field with an unrecognized crop_type
+- WHEN the card renders
+- THEN the fallback `🌱` emoji is shown
+
+#### Scenario: Consistent rendering
+- GIVEN both `fields/page.tsx` and `field-card.tsx`
+- WHEN they render fields with the same crop_type
+- THEN both show the SAME emoji (shared map)
+
+### Acceptance Criteria (added by tenant-region-and-search-enhancements)
+
+| ID | Criterion | Pass/Fail |
+|----|-----------|-----------|
+| AC6 | `CROP_EMOJIS` contains exactly 18 entries, all unique | Pass |
+| AC7 | Unknown crop_type renders 🌱, not undefined or crash | Pass |
+| AC8 | Both `fields/page.tsx` and `field-card.tsx` display identical emoji for the same crop_type | Pass |
+
 ## Validation Rules
 
 | Field | Rule | Location |

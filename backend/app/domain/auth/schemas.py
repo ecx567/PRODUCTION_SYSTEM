@@ -58,6 +58,7 @@ class SignupRequest(BaseModel):
     email: EmailStr = Field(..., description="New user email address")
     password: str = Field(..., min_length=8, description="Account password (min 8 chars)")
     name: str | None = Field(default=None, description="Optional display name")
+    country: str | None = Field(default="EC", max_length=100, description="Tenant country (ISO code)")
 
 
 class SessionResponse(BaseModel):
