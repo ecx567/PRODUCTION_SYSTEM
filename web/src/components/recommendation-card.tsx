@@ -354,14 +354,15 @@ export default function RecommendationCard(props: RecommendationCardProps) {
       {/* Body */}
       <p className="mt-3 text-sm text-soil-500">{getDescription(props)}</p>
 
-      {/* Action buttons — only render after mount to avoid hydration mismatch */}
-      {mounted && !isDone && (
+      {/* Action buttons */}
+      {!isDone && (
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-leaf-50 pt-3">
           {actionLabel && (
             <button
               type="button"
               onClick={handlePrimaryAction}
               disabled={isUpdating}
+              suppressHydrationWarning
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
                 "bg-leaf-500 text-white hover:bg-leaf-600",
