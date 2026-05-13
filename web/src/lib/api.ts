@@ -3,7 +3,20 @@
  *
  * Public/visualization mode — no auth required.
  * All endpoints are accessible without authentication.
+ *
+ * When the backend is unreachable (dev mode without Django),
+ * enable NEXT_PUBLIC_USE_MOCK=true in .env.local to use mock data.
  */
+
+import {
+  MOCK_FIELDS,
+  MOCK_ALERTS,
+  getMockSensors,
+  getMockSensorSummary,
+  getMockHourlyRollup,
+  getMockPrediction,
+  getMockRecommendation,
+} from "./mock-data";
 
 // ── Types matching backend schemas ─────────────────────────────
 
@@ -110,6 +123,19 @@ export interface SessionUser {
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+const USE_MOCK =
+  process.env.NEXT_PUBLIC_USE_MOCK === "true";
+
+/** True if the error is a network-level failure (server unreachable). */
+function isNetworkError(err: unknown): boolean {
+  return (
+    err instanceof TypeError &&
+    (err.message === "Failed to fetch" ||
+      err.message === "NetworkError when attempting to fetch resource" ||
+      err.message?.includes("fetch"))
+  );
+}
+
 interface FetchOptions extends RequestInit {
   /** Skip the JSON parse and return raw Response (e.g. for 204 No Content) */
   raw?: boolean;
@@ -173,17 +199,48 @@ export async function getFields(
   country?: string,
   region?: string,
 ): Promise<FieldList> {
-  const params = new URLSearchParams();
-  if (cursor) params.set("cursor", cursor);
-  params.set("page_size", String(pageSize));
-  if (q) params.set("q", q);
-  if (country) params.set("country", country);
-  if (region) params.set("region", region);
-  return apiFetch<FieldList>(`/api/v1/fields?${params.toString()}`);
+  if (USE_MOCK) {
+    const filtered = q
+      ? MOCK_FIELDS.filter(
+          (f) =>
+            f.name.toLowerCase().includes(q.toLowerCase()) ||
+            f.crop_type.toLowerCase().includes(q.toLowerCase()),
+        )
+      : MOCK_FIELDS;
+    return { items: filtered, next_cursor: null, total: filtered.length };
+  }
+  try {
+    const params = new URLSearchParams();
+    if (cursor) params.set("cursor", cursor);
+    params.set("page_size", String(pageSize));
+    if (q) params.set("q", q);
+    if (country) params.set("country", country);
+    if (region) params.set("region", region);
+    return await apiFetch<FieldList>(`/api/v1/fields?${params.toString()}`);
+  } catch (err) {
+    if (isNetworkError(err)) {
+      return { items: MOCK_FIELDS, next_cursor: null, total: MOCK_FIELDS.length };
+    }
+    throw err;
+  }
 }
 
 export async function getField(id: string): Promise<FieldResponse> {
-  return apiFetch<FieldResponse>(`/api/v1/fields/${id}`);
+  if (USE_MOCK) {
+    const field = MOCK_FIELDS.find((f) => f.id === id);
+    if (!field) throw new ApiError(404, `Field ${id} not found`);
+    return field;
+  }
+  try {
+    return await apiFetch<FieldResponse>(`/api/v1/fields/${id}`);
+  } catch (err) {
+    if (isNetworkError(err)) {
+      const field = MOCK_FIELDS.find((f) => f.id === id);
+      if (!field) throw new ApiError(404, `Field ${id} not found`);
+      return field;
+    }
+    throw err;
+  }
 }
 
 // ── Sensors ────────────────────────────────────────────────────
@@ -191,9 +248,15 @@ export async function getField(id: string): Promise<FieldResponse> {
 export async function getFieldSensors(
   fieldId: string,
 ): Promise<SensorReadingResponse[]> {
-  return apiFetch<SensorReadingResponse[]>(
-    `/api/v1/fields/${fieldId}/sensors`,
-  );
+  if (USE_MOCK) return getMockSensors(fieldId);
+  try {
+    return await apiFetch<SensorReadingResponse[]>(
+      `/api/v1/fields/${fieldId}/sensors`,
+    );
+  } catch (err) {
+    if (isNetworkError(err)) return getMockSensors(fieldId);
+    throw err;
+  }
 }
 
 export async function getSensorHistory(
@@ -216,9 +279,15 @@ export async function getSensorHistory(
 export async function getAnalyticsSummary(
   fieldId: string,
 ): Promise<SensorReadingSummary> {
-  return apiFetch<SensorReadingSummary>(
-    `/api/v1/fields/${fieldId}/analytics/summary`,
-  );
+  if (USE_MOCK) return getMockSensorSummary(fieldId);
+  try {
+    return await apiFetch<SensorReadingSummary>(
+      `/api/v1/fields/${fieldId}/analytics/summary`,
+    );
+  } catch (err) {
+    if (isNetworkError(err)) return getMockSensorSummary(fieldId);
+    throw err;
+  }
 }
 
 export async function getHourlyRollup(
@@ -226,16 +295,22 @@ export async function getHourlyRollup(
   startTime?: string,
   endTime?: string,
 ): Promise<HourlyRollup[]> {
-  const params = new URLSearchParams();
-  if (startTime) params.set("start_time", startTime);
-  if (endTime) params.set("end_time", endTime);
-  const data = await apiFetch<
-    (HourlyRollup & { bucket?: string })[]
-  >(`/api/v1/fields/${fieldId}/analytics/hourly?${params.toString()}`);
-  return data.map((item) => ({
-    ...item,
-    hour: item.hour ?? item.bucket ?? "",
-  }));
+  if (USE_MOCK) return getMockHourlyRollup(fieldId);
+  try {
+    const params = new URLSearchParams();
+    if (startTime) params.set("start_time", startTime);
+    if (endTime) params.set("end_time", endTime);
+    const data = await apiFetch<
+      (HourlyRollup & { bucket?: string })[]
+    >(`/api/v1/fields/${fieldId}/analytics/hourly?${params.toString()}`);
+    return data.map((item) => ({
+      ...item,
+      hour: item.hour ?? item.bucket ?? "",
+    }));
+  } catch (err) {
+    if (isNetworkError(err)) return getMockHourlyRollup(fieldId);
+    throw err;
+  }
 }
 
 // ── Alert Events ───────────────────────────────────────────────
@@ -246,15 +321,31 @@ export async function getAlertEvents(
   severity?: string,
   acknowledged?: boolean,
 ): Promise<AlertEventList> {
-  const params = new URLSearchParams();
-  if (cursor) params.set("cursor", cursor);
-  params.set("page_size", String(pageSize));
-  if (severity) params.set("severity", severity);
-  if (acknowledged !== undefined)
-    params.set("acknowledged", String(acknowledged));
-  return apiFetch<AlertEventList>(
-    `/api/v1/alerts/events?${params.toString()}`,
-  );
+  if (USE_MOCK) {
+    let filtered = MOCK_ALERTS;
+    if (severity) filtered = filtered.filter((a) => a.severity === severity);
+    if (acknowledged !== undefined)
+      filtered = filtered.filter((a) =>
+        acknowledged ? a.acknowledged_at !== null : a.acknowledged_at === null,
+      );
+    return { items: filtered, next_cursor: null, total: filtered.length };
+  }
+  try {
+    const params = new URLSearchParams();
+    if (cursor) params.set("cursor", cursor);
+    params.set("page_size", String(pageSize));
+    if (severity) params.set("severity", severity);
+    if (acknowledged !== undefined)
+      params.set("acknowledged", String(acknowledged));
+    return await apiFetch<AlertEventList>(
+      `/api/v1/alerts/events?${params.toString()}`,
+    );
+  } catch (err) {
+    if (isNetworkError(err)) {
+      return { items: MOCK_ALERTS, next_cursor: null, total: MOCK_ALERTS.length };
+    }
+    throw err;
+  }
 }
 
 export async function acknowledgeAlert(
@@ -553,9 +644,15 @@ export interface RecommendationSummary {
 export async function getRecommendationSummary(
   fieldId: string,
 ): Promise<RecommendationSummary> {
-  return apiFetch<RecommendationSummary>(
-    `/api/v1/fields/${fieldId}/recommendations`,
-  );
+  if (USE_MOCK) return getMockRecommendation(fieldId);
+  try {
+    return await apiFetch<RecommendationSummary>(
+      `/api/v1/fields/${fieldId}/recommendations`,
+    );
+  } catch (err) {
+    if (isNetworkError(err)) return getMockRecommendation(fieldId);
+    throw err;
+  }
 }
 
 // ── Yield Prediction ──────────────────────────────────────────
@@ -590,9 +687,15 @@ export interface PredictionHistoryResponse {
 export async function getYieldPrediction(
   fieldId: string,
 ): Promise<YieldPredictionResponse> {
-  return apiFetch<YieldPredictionResponse>(
-    `/api/v1/fields/${fieldId}/predictions/yield`,
-  );
+  if (USE_MOCK) return getMockPrediction();
+  try {
+    return await apiFetch<YieldPredictionResponse>(
+      `/api/v1/fields/${fieldId}/predictions/yield`,
+    );
+  } catch (err) {
+    if (isNetworkError(err)) return getMockPrediction();
+    throw err;
+  }
 }
 
 /** Fetch historical yield predictions for a field. */
