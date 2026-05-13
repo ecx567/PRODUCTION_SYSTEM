@@ -13,13 +13,16 @@ import {
   Dimensions,
 } from "react-native";
 import { useLocalSearchParams, Stack } from "expo-router";
-import { ArrowLeft, RefreshCw } from "lucide-react-native";
+import { ArrowLeft, RefreshCw, Thermometer, Droplets } from "lucide-react-native";
+import { LineChart } from "react-native-chart-kit";
 import * as api from "@/lib/api";
 import * as database from "@/lib/database";
 import SensorGauge from "@/components/SensorGauge";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
+import { getCropEmoji } from "@/data/crops";
 
 const screenWidth = Dimensions.get("window").width;
+const CHART_W = screenWidth - 32;
 
 interface FieldDetail {
   id: string;
@@ -38,6 +41,13 @@ interface SensorDisplay {
   rain: number | null;
 }
 
+interface SensorHistory {
+  labels: string[];
+  temp: number[];
+  humidity: number[];
+  moisture: number[];
+}
+
 interface RecItem {
   type: string;
   action: string;
@@ -49,6 +59,7 @@ export default function FieldDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [field, setField] = useState<FieldDetail | null>(null);
   const [sensors, setSensors] = useState<SensorDisplay | null>(null);
+  const [history, setHistory] = useState<SensorHistory | null>(null);
   const [recommendations, setRecommendations] = useState<RecItem[]>([]);
   const [alerts, setAlerts] = useState<
     { id: string; severity: string; message: string; triggeredAt: string }[]
@@ -58,7 +69,7 @@ export default function FieldDetailScreen() {
 
   const loadDetail = async () => {
     try {
-      // Load from local DB first (offline-first)
+      // Offline-first: load from local DB
       const localField = await database.getLocalField(id);
       if (localField) {
         setField({
@@ -80,6 +91,19 @@ export default function FieldDetailScreen() {
           humidity: latest.humidity,
           soilMoisture: latest.soil_moisture,
           rain: latest.rain,
+        });
+
+        // Build history data from local readings
+        const reversed = [...localReadings].reverse();
+        const labels = reversed.map((r) => {
+          const d = new Date(r.time);
+          return `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+        });
+        setHistory({
+          labels: labels.slice(0, 12),
+          temp: reversed.map((r) => r.temp ?? 0).slice(0, 12),
+          humidity: reversed.map((r) => r.humidity ?? 0).slice(0, 12),
+          moisture: reversed.map((r) => r.soil_moisture ?? 0).slice(0, 12),
         });
       }
 
@@ -119,13 +143,26 @@ export default function FieldDetailScreen() {
         });
 
         if (sensorData.length > 0) {
-          const latestSensor = sensorData[0];
+          const latest = sensorData[0];
           setSensors({
-            time: latestSensor.time,
-            temp: latestSensor.temp,
-            humidity: latestSensor.humidity,
-            soilMoisture: latestSensor.soil_moisture,
-            rain: latestSensor.rain,
+            time: latest.time,
+            temp: latest.temp,
+            humidity: latest.humidity,
+            soilMoisture: latest.soil_moisture,
+            rain: latest.rain,
+          });
+
+          // Build history from remote data
+          const reversed = [...sensorData].reverse();
+          const labels = reversed.map((r) => {
+            const d = new Date(r.time);
+            return `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+          });
+          setHistory({
+            labels: labels.slice(0, 12),
+            temp: reversed.map((r) => r.temp ?? 0).slice(0, 12),
+            humidity: reversed.map((r) => r.humidity ?? 0).slice(0, 12),
+            moisture: reversed.map((r) => r.soil_moisture ?? 0).slice(0, 12),
           });
         }
 
@@ -133,23 +170,23 @@ export default function FieldDetailScreen() {
           const items: RecItem[] = [];
           if (recData.irrigation) {
             items.push({
-              type: "Irrigation",
+              type: "Riego",
               action: recData.irrigation.action,
-              detail: `ETo: ${recData.irrigation.eto_mm}mm | Moisture: ${recData.irrigation.soil_moisture_pct}%`,
+              detail: `ETo: ${recData.irrigation.eto_mm}mm | Humedad: ${recData.irrigation.soil_moisture_pct}%`,
               confidence: recData.irrigation.confidence,
             });
           }
           if (recData.fertilization) {
             items.push({
-              type: "Fertilization",
+              type: "Fertilización",
               action: recData.fertilization.action,
-              detail: `N: ${recData.fertilization.nitrogen_kg_ha} kg/ha | Stage: ${recData.fertilization.stage}`,
+              detail: `N: ${recData.fertilization.nitrogen_kg_ha} kg/ha | Etapa: ${recData.fertilization.stage}`,
               confidence: recData.fertilization.confidence,
             });
           }
           if (recData.pest_risk) {
             items.push({
-              type: "Pest Risk",
+              type: "Riesgo de Plagas",
               action: recData.pest_risk.risk_level,
               detail: `${recData.pest_risk.pest_type} | GDD: ${recData.pest_risk.gdd_accumulated}/${recData.pest_risk.gdd_threshold}`,
               confidence: recData.pest_risk.risk_level,
@@ -199,36 +236,40 @@ export default function FieldDetailScreen() {
   if (!field) {
     return (
       <View className="flex-1 bg-gray-50 items-center justify-center">
-        <Text className="text-gray-500">Field not found</Text>
+        <Text className="text-gray-500">Campo no encontrado</Text>
       </View>
     );
   }
 
   const severityColor = (sev: string) => {
     switch (sev) {
-      case "critical":
-        return "bg-danger";
-      case "warning":
-        return "bg-sunlight";
-      default:
-        return "bg-sky";
+      case "critical": return "bg-danger";
+      case "warning": return "bg-sunlight";
+      default: return "bg-sky";
     }
   };
 
   const actionColor = (action: string) => {
     switch (action) {
       case "irrigate":
-      case "apply":
-        return "bg-leaf";
+      case "apply": return "bg-leaf";
       case "high":
-      case "severe":
-        return "bg-danger";
+      case "severe": return "bg-danger";
       case "monitor":
-      case "delay":
-        return "bg-sunlight";
-      default:
-        return "bg-gray-400";
+      case "delay": return "bg-sunlight";
+      default: return "bg-gray-400";
     }
+  };
+
+  const chartConfig = {
+    backgroundColor: "white",
+    backgroundGradientFrom: "white",
+    backgroundGradientTo: "white",
+    decimalPlaces: 0,
+    color: (opacity = 1) => `rgba(45, 106, 79, ${opacity})`,
+    labelColor: () => "#6B7280",
+    propsForBackgroundLines: { strokeDasharray: "", stroke: "#E5E7EB" },
+    propsForDots: { r: "3" },
   };
 
   return (
@@ -240,12 +281,7 @@ export default function FieldDetailScreen() {
           headerStyle: { backgroundColor: "#2D6A4F" },
           headerTintColor: "white",
           headerLeft: () => (
-            <TouchableOpacity
-              onPress={() => {
-                // Router handles going back
-              }}
-              className="mr-2"
-            >
+            <TouchableOpacity onPress={() => {}} className="mr-2">
               <ArrowLeft size={24} color="white" />
             </TouchableOpacity>
           ),
@@ -270,80 +306,126 @@ export default function FieldDetailScreen() {
         <View className="p-4">
           {/* Field Info Card */}
           <View className="bg-white rounded-xl p-4 mb-4 shadow-sm border border-gray-100">
-            <View className="flex-row justify-between items-center mb-2">
-              <Text className="text-lg font-semibold text-gray-800 capitalize">
-                {field.cropType}
-              </Text>
-              <View className="bg-leaf-light/10 rounded-full px-3 py-1">
-                <Text className="text-leaf text-sm font-medium">
-                  {field.areaHa} ha
-                </Text>
+            <View className="flex-row items-center mb-3">
+              <Text className="text-3xl mr-3">{getCropEmoji(field.cropType)}</Text>
+              <View className="flex-1">
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-lg font-semibold text-gray-800 capitalize">
+                    {field.cropType}
+                  </Text>
+                  <View className="bg-leaf/10 rounded-full px-3 py-1">
+                    <Text className="text-leaf text-sm font-medium">
+                      {field.areaHa} ha
+                    </Text>
+                  </View>
+                </View>
+                {field.plantedAt && (
+                  <Text className="text-gray-500 text-sm mt-0.5">
+                    Plantado: {new Date(field.plantedAt).toLocaleDateString()}
+                  </Text>
+                )}
+                {field.location && (
+                  <Text className="text-gray-400 text-xs mt-0.5">
+                    {field.location}
+                  </Text>
+                )}
               </View>
             </View>
-            {field.plantedAt && (
-              <Text className="text-gray-500 text-sm">
-                Planted: {new Date(field.plantedAt).toLocaleDateString()}
-              </Text>
-            )}
-            {field.location && (
-              <Text className="text-gray-400 text-xs mt-1">
-                {field.location}
-              </Text>
-            )}
           </View>
 
           {/* Sensor Gauges */}
-          <Text className="text-lg font-semibold text-gray-800 mb-3">
-            Latest Readings
+          <Text className="text-base font-semibold text-gray-800 mb-3">
+            Lecturas Actuales
           </Text>
           {sensors ? (
             <View className="flex-row flex-wrap justify-between mb-4">
-              <SensorGauge
-                label="Temperature"
-                value={sensors.temp}
-                unit="°C"
-                min={-10}
-                max={50}
-                threshold={{ warn: 35, danger: 42 }}
-                colorScale={["#7EC8E3", "#F4A460", "#E76F51"]}
-              />
-              <SensorGauge
-                label="Humidity"
-                value={sensors.humidity}
-                unit="%"
-                min={0}
-                max={100}
-                threshold={{ warn: 80, danger: 90 }}
-                colorScale={["#7EC8E3", "#40916C", "#2D6A4F"]}
-              />
-              <SensorGauge
-                label="Soil Moisture"
-                value={sensors.soilMoisture}
-                unit="%"
-                min={0}
-                max={100}
-                threshold={{ warn: 20, danger: 10 }}
-                colorScale={["#E76F51", "#F4A460", "#7EC8E3"]}
-              />
-              <SensorGauge
-                label="Rain"
-                value={sensors.rain}
-                unit="mm"
-                min={0}
-                max={200}
-                threshold={{ warn: 80, danger: 120 }}
-                colorScale={["#7EC8E3", "#40916C", "#1B4332"]}
-              />
+              <SensorGauge label="Temperatura" value={sensors.temp} unit="°C" min={-10} max={50} threshold={{ warn: 35, danger: 42 }} colorScale={["#7EC8E3", "#F4A460", "#E76F51"]} />
+              <SensorGauge label="Humedad" value={sensors.humidity} unit="%" min={0} max={100} threshold={{ warn: 80, danger: 90 }} colorScale={["#7EC8E3", "#40916C", "#2D6A4F"]} />
+              <SensorGauge label="Suelo" value={sensors.soilMoisture} unit="%" min={0} max={100} threshold={{ warn: 20, danger: 10 }} colorScale={["#E76F51", "#F4A460", "#7EC8E3"]} />
+              <SensorGauge label="Lluvia" value={sensors.rain} unit="mm" min={0} max={200} threshold={{ warn: 80, danger: 120 }} colorScale={["#7EC8E3", "#40916C", "#1B4332"]} />
             </View>
           ) : (
             <View className="bg-white rounded-xl p-6 items-center mb-4 shadow-sm border border-gray-100">
-              <Text className="text-gray-400">No sensor data available</Text>
+              <Text className="text-gray-400">Sin datos de sensores</Text>
             </View>
           )}
 
+          {/* Historical Chart */}
+          {history && history.temp.length > 1 && (
+            <>
+              <Text className="text-base font-semibold text-gray-800 mb-3">
+                Historial de Sensores
+              </Text>
+
+              {/* Temperature chart */}
+              <View className="bg-white rounded-xl p-3 mb-3 shadow-sm border border-gray-100">
+                <View className="flex-row items-center mb-2">
+                  <Thermometer size={14} color="#E76F51" />
+                  <Text className="text-xs font-semibold text-gray-600 ml-1.5">
+                    Temperatura (°C)
+                  </Text>
+                </View>
+                <LineChart
+                  data={{
+                    labels: history.labels,
+                    datasets: [
+                      {
+                        data: history.temp,
+                        color: () => "#E76F51",
+                        strokeWidth: 2,
+                      },
+                    ],
+                  }}
+                  width={CHART_W - 16}
+                  height={150}
+                  chartConfig={{
+                    ...chartConfig,
+                    color: (opacity = 1) => `rgba(231, 111, 81, ${opacity})`,
+                  }}
+                  bezier
+                  withInnerLines={false}
+                  withOuterLines={true}
+                  style={{ borderRadius: 8 }}
+                />
+              </View>
+
+              {/* Humidity chart */}
+              <View className="bg-white rounded-xl p-3 mb-4 shadow-sm border border-gray-100">
+                <View className="flex-row items-center mb-2">
+                  <Droplets size={14} color="#7EC8E3" />
+                  <Text className="text-xs font-semibold text-gray-600 ml-1.5">
+                    Humedad (%)
+                  </Text>
+                </View>
+                <LineChart
+                  data={{
+                    labels: history.labels,
+                    datasets: [
+                      {
+                        data: history.humidity,
+                        color: () => "#7EC8E3",
+                        strokeWidth: 2,
+                      },
+                    ],
+                  }}
+                  width={CHART_W - 16}
+                  height={150}
+                  chartConfig={{
+                    ...chartConfig,
+                    color: (opacity = 1) => `rgba(126, 200, 227, ${opacity})`,
+                  }}
+                  bezier
+                  withInnerLines={false}
+                  withOuterLines={true}
+                  style={{ borderRadius: 8 }}
+                />
+              </View>
+            </>
+          )}
+
           {/* Recommendations */}
-          <Text className="text-lg font-semibold text-gray-800 mb-3">
-            Recommendations
+          <Text className="text-base font-semibold text-gray-800 mb-3">
+            Recomendaciones
           </Text>
           {recommendations.length > 0 ? (
             recommendations.map((rec, idx) => (
@@ -353,9 +435,7 @@ export default function FieldDetailScreen() {
               >
                 <View className="flex-row items-center justify-between mb-2">
                   <Text className="font-semibold text-gray-800">{rec.type}</Text>
-                  <View
-                    className={`${actionColor(rec.action)} rounded-full px-3 py-0.5`}
-                  >
+                  <View className={`${actionColor(rec.action)} rounded-full px-3 py-0.5`}>
                     <Text className="text-white text-xs font-medium capitalize">
                       {rec.action}
                     </Text>
@@ -364,20 +444,20 @@ export default function FieldDetailScreen() {
                 <Text className="text-gray-500 text-sm">{rec.detail}</Text>
                 {rec.confidence && (
                   <Text className="text-gray-400 text-xs mt-1">
-                    Confidence: {rec.confidence}
+                    Confianza: {rec.confidence}
                   </Text>
                 )}
               </TouchableOpacity>
             ))
           ) : (
             <View className="bg-white rounded-xl p-6 items-center mb-4 shadow-sm border border-gray-100">
-              <Text className="text-gray-400">No recommendations yet</Text>
+              <Text className="text-gray-400">Sin recomendaciones aún</Text>
             </View>
           )}
 
           {/* Recent Alerts */}
-          <Text className="text-lg font-semibold text-gray-800 mb-3">
-            Recent Alerts
+          <Text className="text-base font-semibold text-gray-800 mb-3">
+            Alertas Recientes
           </Text>
           {alerts.length > 0 ? (
             alerts.map((alert) => (
@@ -386,9 +466,7 @@ export default function FieldDetailScreen() {
                 className="bg-white rounded-xl p-4 mb-2 shadow-sm border border-gray-100"
               >
                 <View className="flex-row items-center">
-                  <View
-                    className={`h-3 w-3 rounded-full mr-3 ${severityColor(alert.severity)}`}
-                  />
+                  <View className={`h-3 w-3 rounded-full mr-3 ${severityColor(alert.severity)}`} />
                   <View className="flex-1">
                     <Text className="text-gray-800 text-sm">{alert.message}</Text>
                     <Text className="text-gray-400 text-xs mt-0.5">
@@ -400,7 +478,7 @@ export default function FieldDetailScreen() {
             ))
           ) : (
             <View className="bg-white rounded-xl p-6 items-center mb-4 shadow-sm border border-gray-100">
-              <Text className="text-gray-400">No alerts for this field</Text>
+              <Text className="text-gray-400">Sin alertas para este campo</Text>
             </View>
           )}
         </View>

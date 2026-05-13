@@ -1,10 +1,9 @@
 /**
- * Tab navigator layout: Dashboard, Fields, Alerts, Settings.
+ * Tab navigator layout: Dashboard, Fields, Crops, Alerts, Settings.
  */
 
 import { Tabs } from "expo-router";
-import { View, Text } from "react-native";
-import { Home, MapPin, Bell, Settings } from "lucide-react-native";
+import { Home, MapPin, Leaf, Bell, Settings } from "lucide-react-native";
 
 function TabIcon({ icon: Icon, color, size }: { icon: typeof Home; color: string; size: number }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,6 +46,15 @@ export default function TabLayout() {
           title: "Fields",
           tabBarIcon: ({ color, size }) => (
             <TabIcon icon={MapPin} color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="crops"
+        options={{
+          title: "Cultivos",
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon icon={Leaf} color={color} size={size} />
           ),
         }}
       />

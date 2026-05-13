@@ -1,10 +1,11 @@
 /**
- * Field summary card: crop icon, name, area, quick status.
+ * Field summary card: crop icon (emoji for 18 crops), name, area, quick status.
  */
 
 import React from "react";
 import { View, Text } from "react-native";
 import { MapPin } from "lucide-react-native";
+import { getCropEmoji } from "@/data/crops";
 
 interface FieldCardProps {
   name: string;
@@ -12,15 +13,8 @@ interface FieldCardProps {
   areaHa: number;
 }
 
-const CROP_EMOJI: Record<string, string> = {
-  banana: "🍌",
-  maize: "🌽",
-  cacao: "🍫",
-  rice: "🌾",
-};
-
 export default function FieldCard({ name, cropType, areaHa }: FieldCardProps) {
-  const emoji = CROP_EMOJI[cropType.toLowerCase()] ?? "🌱";
+  const emoji = getCropEmoji(cropType);
 
   return (
     <View className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
