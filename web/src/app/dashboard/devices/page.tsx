@@ -163,7 +163,7 @@ export default function DevicesPage() {
       ) : (
         <div
           data-testid="sensor-grid"
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start"
         >
           {sensors.map((sensor) => (
             <SensorCard

@@ -278,7 +278,7 @@ interface UseFieldsReturn {
  * Fetch the list of fields for the current tenant.
  * Accepts an optional search query ``q`` to filter by name/crop_type.
  */
-export function useFields(q?: string): UseFieldsReturn {
+export function useFields(q?: string, country?: string, region?: string): UseFieldsReturn {
   const [fields, setFields] = useState<FieldResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -290,7 +290,7 @@ export function useFields(q?: string): UseFieldsReturn {
 
     async function load() {
       try {
-        const data = await getFields(undefined, 20, q);
+        const data = await getFields(undefined, 20, q, country, region);
         if (!cancelled) {
           setFields(data.items);
           setTotal(data.total);
@@ -311,7 +311,7 @@ export function useFields(q?: string): UseFieldsReturn {
     return () => {
       cancelled = true;
     };
-  }, [q]);
+  }, [q, country, region]);
 
   return { fields, isLoading, error, total };
 }
