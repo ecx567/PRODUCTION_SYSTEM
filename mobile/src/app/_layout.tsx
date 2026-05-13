@@ -8,7 +8,7 @@
  * The database is in-memory and ephemeral.
  */
 
-import "../global.css";
+import "../global.generated.css";
 import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
