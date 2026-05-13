@@ -101,6 +101,7 @@ export interface HourlyRollup {
   min_temp: number | null;
   max_temp: number | null;
   avg_humidity: number | null;
+  avg_soil_moisture: number | null;
   total_rain: number | null;
 }
 
