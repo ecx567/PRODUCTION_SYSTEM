@@ -354,8 +354,8 @@ export default function RecommendationCard(props: RecommendationCardProps) {
       {/* Body */}
       <p className="mt-3 text-sm text-soil-500">{getDescription(props)}</p>
 
-      {/* Action buttons */}
-      {!isDone && (
+      {/* Action buttons — only render after mount to avoid hydration mismatch */}
+      {mounted && !isDone && (
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-leaf-50 pt-3">
           {actionLabel && (
             <button

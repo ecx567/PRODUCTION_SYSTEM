@@ -27,8 +27,8 @@ export default function LockScreen() {
 
         {/* Title */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-white">Crop Production System</h1>
-          <p className="mt-1 text-sm text-white/60">Precision Agriculture Platform</p>
+          <h1 className="text-3xl font-bold text-white" suppressHydrationWarning>Crop Production System</h1>
+          <p className="mt-1 text-sm text-white/60" suppressHydrationWarning>Precision Agriculture Platform</p>
         </div>
 
         {/* Iniciar button */}
