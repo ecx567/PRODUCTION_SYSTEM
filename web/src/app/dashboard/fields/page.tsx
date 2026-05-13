@@ -1,29 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Sprout } from "lucide-react";
 import { useFields } from "@/lib/hooks";
-
-const CROP_EMOJIS: Record<string, string> = {
-  banana: "🍌",
-  maize: "🌽",
-  cacao: "🍫",
-  rice: "🌾",
-};
+import { getCropEmoji } from "@/lib/crop-icons";
 
 export default function FieldsPage() {
   const router = useRouter();
-  const { fields, isLoading, error, total } = useFields();
-  const [search, setSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  const filtered = search
-    ? fields.filter(
-        (f) =>
-          f.name.toLowerCase().includes(search.toLowerCase()) ||
-          f.crop_type.toLowerCase().includes(search.toLowerCase()),
-      )
-    : fields;
+  // 300ms debounce for search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const { fields, isLoading, error, total } = useFields(
+    debouncedQuery || undefined,
+  );
 
   return (
     <div className="space-y-6">
@@ -40,8 +38,8 @@ export default function FieldsPage() {
         <input
           type="text"
           placeholder="Search fields by name or crop type..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full rounded-lg border border-leaf-200 bg-white py-2.5 pl-10 pr-4 text-sm text-leaf-900 placeholder-soil-300 focus:border-leaf-400 focus:outline-none focus:ring-2 focus:ring-leaf-200"
         />
       </div>
@@ -69,19 +67,21 @@ export default function FieldsPage() {
       )}
 
       {/* Empty */}
-      {!isLoading && !error && filtered.length === 0 && (
+      {!isLoading && !error && fields.length === 0 && (
         <div className="dashboard-card flex flex-col items-center gap-3 py-12 text-center">
           <Sprout className="h-10 w-10 text-leaf-200" />
           <p className="text-sm text-soil-400">
-            {search ? "No fields match your search" : "No fields yet"}
+            {debouncedQuery
+              ? "No fields match your search"
+              : "No fields yet"}
           </p>
         </div>
       )}
 
       {/* Fields grid */}
-      {!isLoading && !error && filtered.length > 0 && (
+      {!isLoading && !error && fields.length > 0 && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((field) => (
+          {fields.map((field) => (
             <div
               key={field.id}
               className="dashboard-card cursor-pointer transition-all hover:border-leaf-300 hover:shadow-md"
@@ -90,7 +90,7 @@ export default function FieldsPage() {
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">
-                    {CROP_EMOJIS[field.crop_type] ?? "🌱"}
+                    {getCropEmoji(field.crop_type)}
                   </span>
                   <div>
                     <p className="text-sm font-semibold text-leaf-800">

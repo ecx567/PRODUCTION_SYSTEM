@@ -328,10 +328,16 @@ export async function signupUser(
 export async function getFields(
   cursor?: string,
   pageSize = 20,
+  q?: string,
+  country?: string,
+  region?: string,
 ): Promise<FieldList> {
   const params = new URLSearchParams();
   if (cursor) params.set("cursor", cursor);
   params.set("page_size", String(pageSize));
+  if (q) params.set("q", q);
+  if (country) params.set("country", country);
+  if (region) params.set("region", region);
   return apiFetch<FieldList>(`/api/v1/fields?${params.toString()}`);
 }
 
