@@ -60,6 +60,37 @@ The system MUST display `signal_quality` as a visual indicator (bars/dots) with 
 - THEN the indicator shows "—" or "Unknown"
 - AND no chart rendering error occurs
 
+### R4: Expandable Sensor Cards with Sparklines
+
+The system MUST support expand/collapse on sensor cards via click on the card header. When expanded, the card MUST render mini sparkline charts (via Recharts `LineChart`) for each metric (temp, humidity, soil_moisture, rain). Sparkline data MUST come from the existing `hourlyRollup` state array, filtered by sensor_id. Expand/collapse MUST use a smooth CSS transition (~300ms). Only ONE card MAY be expanded at a time (accordion behavior).
+
+#### Scenario: Happy path — expand with sparklines
+- GIVEN a sensor card with hourlyRollup data
+- WHEN the user clicks the card header
+- THEN the card expands with a smooth animation
+- AND a mini sparkline chart renders for each metric
+
+#### Scenario: Accordion behavior
+- GIVEN card A is expanded
+- WHEN the user clicks card B
+- THEN card A collapses smoothly
+- AND card B expands
+
+#### Scenario: Edge case — no hourlyRollup data
+- GIVEN a sensor card with no hourlyRollup data
+- WHEN the user expands the card
+- THEN the expanded area shows "No data" message — no chart error
+
+### Acceptance Criteria (added by tenant-region-and-search-enhancements)
+
+| ID | Criterion | Pass/Fail |
+|----|-----------|-----------|
+| AC6 | Clicking sensor card header expands/collapses the card | Pass |
+| AC7 | Expanded section shows Recharts sparkline for available metrics | Pass |
+| AC8 | Expand/collapse has visible smooth animation (~300ms) | Pass |
+| AC9 | Only one card is expanded at a time (accordion) | Pass |
+| AC10 | No hourlyRollup shows empty state, not error | Pass |
+
 ## Acceptance Criteria
 
 | ID | Criterion | Pass/Fail |
