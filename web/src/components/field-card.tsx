@@ -1,6 +1,7 @@
 "use client";
 
 import { Sprout, MapPin } from "lucide-react";
+import { getCropEmoji } from "@/lib/crop-icons";
 
 interface FieldCardProps {
   name: string;
@@ -11,13 +12,6 @@ interface FieldCardProps {
   alertCount?: number;
   onClick?: () => void;
 }
-
-const CROP_EMOJIS: Record<string, string> = {
-  banana: "🍌",
-  maize: "🌽",
-  cacao: "🍫",
-  rice: "🌾",
-};
 
 export default function FieldCard({
   name,
@@ -41,7 +35,7 @@ export default function FieldCard({
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <span className="text-2xl">
-            {CROP_EMOJIS[cropType] ?? "🌱"}
+            {getCropEmoji(cropType)}
           </span>
           <div>
             <p className="text-sm font-semibold text-leaf-800">{name}</p>
