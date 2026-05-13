@@ -12,9 +12,10 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import func, select, text
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.auth.models_tenant import Tenant
 from app.domain.fields.models import Field
 from app.domain.fields.schemas import (
     FieldCreate,
@@ -94,6 +95,9 @@ class FieldsService:
         db: AsyncSession,
         cursor: str | None = None,
         page_size: int = DEFAULT_PAGE_SIZE,
+        q: str | None = None,
+        country: str | None = None,
+        region: str | None = None,
     ) -> FieldList:
         """List active fields for a tenant with cursor-based pagination.
 
@@ -105,25 +109,57 @@ class FieldsService:
             db:        Async SQLAlchemy session.
             cursor:    Opaque cursor from the previous page (``next_cursor``).
             page_size: Number of items per page (1–100).
+            q:         Optional search query — ILIKE match on ``name`` and ``crop_type``.
+            country:   Optional filter by tenant country (exact match).
+            region:    Optional filter by tenant region (exact match).
 
         Returns:
             A ``FieldList`` with items, optional next_cursor, and total count.
         """
         page_size = min(max(page_size, 1), MAX_PAGE_SIZE)
 
-        # Get total count of active fields
-        count_stmt = select(func.count(Field.id)).where(
+        # ── Build base WHERE clause ──────────────────────────
+        base_where = [
             Field.tenant_id == UUID(str(tenant_id)),
             Field.deleted_at.is_(None),
-        )
+        ]
+
+        # Search filter: ILIKE on name OR crop_type
+        if q:
+            q_clean = q.strip()
+            if q_clean:
+                like_pattern = f"%{q_clean}%"
+                base_where.append(
+                    or_(
+                        Field.name.ilike(like_pattern),
+                        Field.crop_type.ilike(like_pattern),
+                    )
+                )
+
+        # ── Build count query ────────────────────────────────
+        count_stmt = select(func.count(Field.id)).where(*base_where)
+
+        # Join tenants table if country/region filter is needed for count
+        if country or region:
+            count_stmt = count_stmt.join(Tenant, Field.tenant_id == Tenant.id)
+            if country:
+                count_stmt = count_stmt.where(Tenant.country == country.strip())
+            if region:
+                count_stmt = count_stmt.where(Tenant.region == region.strip())
+
         total_result = await db.execute(count_stmt)
         total = total_result.scalar() or 0
 
-        # Build query with cursor
-        stmt = select(Field).where(
-            Field.tenant_id == UUID(str(tenant_id)),
-            Field.deleted_at.is_(None),
-        )
+        # ── Build data query ─────────────────────────────────
+        stmt = select(Field).where(*base_where)
+
+        # Join tenants table for country/region filtering
+        if country or region:
+            stmt = stmt.join(Tenant, Field.tenant_id == Tenant.id)
+            if country:
+                stmt = stmt.where(Tenant.country == country.strip())
+            if region:
+                stmt = stmt.where(Tenant.region == region.strip())
 
         if cursor:
             try:
