@@ -46,12 +46,24 @@ logger = logging.getLogger("train")
 T_BASE = 10.0  # Base temperature for GDD calculation
 FIELD_CAPACITY = 60.0  # % soil moisture at field capacity (loam)
 
-CROP_TYPES = ["banana", "maize", "cacao", "rice"]
+CROP_TYPES = [
+    "banana", "maize", "cacao", "rice",
+    "coffee", "sugarcane", "soybean", "sunflower", "palm_oil", "cotton",
+    "cassava", "sweet_potato",
+]
 BASE_YIELDS: dict[str, float] = {
     "banana": 35000.0,
     "maize": 6000.0,
     "cacao": 800.0,
     "rice": 4500.0,
+    "coffee": 1200.0,
+    "sugarcane": 70000.0,
+    "soybean": 2800.0,
+    "sunflower": 2000.0,
+    "palm_oil": 18000.0,
+    "cotton": 3000.0,
+    "cassava": 18000.0,
+    "sweet_potato": 15000.0,
 }
 
 FEATURE_COLS = [
@@ -109,7 +121,10 @@ def generate_synthetic_data(n_samples: int = 20000) -> pd.DataFrame:
     df["yield_kg_ha"] = df["crop_type"].map(BASE_YIELDS)
     df["yield_kg_ha"] += df["gdd_accumulated"] * 0.5
     df["yield_kg_ha"] -= df["water_stress_index"] * 2000
-    df["yield_kg_ha"] += np.random.normal(0, df["yield_kg_ha"] * 0.1, n_samples)
+    # Clip before adding noise to prevent negative scale in normal distribution
+    df["yield_kg_ha"] = df["yield_kg_ha"].clip(lower=100)
+    scale = df["yield_kg_ha"] * 0.1
+    df["yield_kg_ha"] += np.random.normal(0, scale.values, n_samples)
     df["yield_kg_ha"] = df["yield_kg_ha"].clip(lower=0)
 
     logger.info("Generated %d training samples.", len(df))

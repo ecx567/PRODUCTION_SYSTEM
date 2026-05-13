@@ -34,20 +34,43 @@ The system MUST change `crop_type` in `Field` model from `Enum(...)` to `mapped_
 
 ### R3: Pydantic — Expand ALLOWED_CROP_TYPES
 
-The system MUST add 6 new crop types to the `ALLOWED_CROP_TYPES` set: `"coffee", "sugarcane", "soybean", "wheat", "cotton", "palm_oil"`. Existing validators MUST remain unchanged.
+The system MUST expand the `ALLOWED_CROP_TYPES` set to contain 20-30 crop types including the original 10 plus: `"pineapple", "papaya", "mango", "avocado", "citrus", "tomato", "chili_pepper", "onion", "cassava", "sweet_potato", "peanut", "sorghum", "millet", "coconut", "rubber", "vanilla", "ginger", "turmeric"`. Existing validators MUST remain unchanged.
 
 #### Scenario: Happy path — new crop type accepted
-- GIVEN the Pydantic schema is updated
-- WHEN a FieldCreate request has crop_type="coffee"
-- THEN the request passes validation
-- AND the field is created
+- GIVEN the ALLOWED_CROP_TYPES set contains 20-30 values
+- WHEN a FieldCreate request has crop_type="pineapple"
+- THEN the request passes validation and the field is created
 
 #### Scenario: Edge case — unknown crop type still rejected
-- GIVEN the updated ALLOWED_CROP_TYPES
+- GIVEN the expanded ALLOWED_CROP_TYPES
 - WHEN a FieldCreate request has crop_type="lavender"
 - THEN the request returns 400: "Invalid crop type 'lavender'"
 
 ### R4: Seed Script — Include New Crops
+
+The system MUST update the seed script to create fields with the new crop types alongside existing ones.
+
+#### Scenario: Happy path — seed runs
+- GIVEN the seed script is updated
+- WHEN it runs
+- THEN fields with crop types "coffee", "sugarcane", etc. are created
+- AND no validation errors occur
+
+### R5: Cross-validate with Crop Profiles
+
+The system MUST validate that a field's `crop_type` has a matching entry in `crop_profiles.json` before generating recommendations. If no profile exists, a warning MUST be logged and recommendations fall back to hardcoded defaults.
+
+#### Scenario: Profile exists — use dynamic data
+- GIVEN a field with crop_type="coffee" and `crop_profiles.json` has a "coffee" entry
+- WHEN recommendations are generated
+- THEN the engine reads FAO-56 Kc values from the profile
+- AND the recommendation uses dynamic parameters
+
+#### Scenario: Profile missing — log warning
+- GIVEN a field with crop_type="vanilla" and no "vanilla" entry in `crop_profiles.json`
+- WHEN recommendations are generated
+- THEN a warning is logged: "No crop profile for 'vanilla', using defaults"
+- AND the engine falls back to hardcoded generic constants
 
 The system MUST update the seed script to create fields with the new crop types alongside existing ones.
 
@@ -62,9 +85,10 @@ The system MUST update the seed script to create fields with the new crop types 
 | ID | Criterion | Pass/Fail |
 |----|-----------|-----------|
 | AC1 | All existing fields retain their crop_type after migration | Pass if `SELECT DISTINCT crop_type FROM fields` returns same values before/after |
-| AC2 | New fields can use any of the 10 crop types | Pass if creating a field with each new type succeeds |
+| AC2 | New fields can use any of the 20-30 crop types | Pass if creating a field with each new type succeeds |
 | AC3 | Unknown crop types are rejected at Pydantic level | Pass if "lavender" returns 400 |
 | AC4 | Alembic downgrade restores enum without data loss | Pass if downgrade + upgrade preserves all rows |
+| AC5 | Field with unknown profile logs warning, falls back to defaults | Pass if warning logged but recommendation still generated |
 
 ## Non-functional Requirements
 
@@ -76,6 +100,6 @@ The system MUST update the seed script to create fields with the new crop types 
 
 | Field | Rule | Location |
 |-------|------|----------|
-| crop_type | Must be in ALLOWED_CROP_TYPES (10 values) | Pydantic schema |
+| crop_type | Must be in ALLOWED_CROP_TYPES (20-30 values) | Pydantic schema |
 | crop_type | Must be lowercase string | Pydantic validator |
 | crop_type | Length 1-50 chars | DB column + Pydantic |

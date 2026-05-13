@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { useCallback, useState } from "react";
 import {
   Thermometer,
   Droplets,
@@ -9,8 +10,12 @@ import {
   ArrowUp,
   ArrowDown,
   Minus,
+  RefreshCw,
 } from "lucide-react";
-import { useSensorData } from "@/lib/hooks";
+import { useSensorData, useRecommendations, usePrediction } from "@/lib/hooks";
+import RecommendationCard from "@/components/recommendation-card";
+import YieldPredictionCard from "@/components/yield-prediction-card";
+import type { RecommendationStatus } from "@/lib/api";
 import {
   LineChart,
   Line,
@@ -27,6 +32,31 @@ export default function FieldDetailPage() {
   const fieldId = params.id as string;
   const { sensors, summary, hourlyRollup, field, isLoading, error } =
     useSensorData(fieldId);
+  const {
+    summary: recSummary,
+    storedItems: recStoredItems,
+    isLoading: recLoading,
+    error: recError,
+    refresh: recRefresh,
+  } = useRecommendations(fieldId);
+  const {
+    prediction,
+    isLoading: predLoading,
+    error: predError,
+    refresh: predRefresh,
+  } = usePrediction(fieldId);
+
+  // Track lifecycle status per recommendation type (client-side optimistic)
+  const [lifecycleStatuses, setLifecycleStatuses] = useState<
+    Record<string, RecommendationStatus>
+  >({});
+
+  const handleRecStatusChange = useCallback(
+    (type: string, newStatus: RecommendationStatus) => {
+      setLifecycleStatuses((prev) => ({ ...prev, [type]: newStatus }));
+    },
+    [],
+  );
 
   function trendIcon(
     current: number | null,
@@ -317,14 +347,152 @@ export default function FieldDetailPage() {
             </div>
           </div>
 
-          {/* Alert history for this field — TODO */}
-          <div className="dashboard-card">
-            <h3 className="text-sm font-semibold text-leaf-800">
-              Recommendations
-            </h3>
-            <p className="mt-2 text-sm text-soil-400">
-              Recommendations will appear here once the ML engine is active.
-            </p>
+          {/* ── Recommendations Section ─────────────────────── */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-leaf-800">
+                Recommendations
+              </h2>
+              {recError && (
+                <button
+                  type="button"
+                  onClick={recRefresh}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-leaf-500 transition-colors hover:text-leaf-600"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Retry
+                </button>
+              )}
+            </div>
+
+            {/* Loading skeleton for recommendations */}
+            {recLoading && (
+              <div className="space-y-3">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="dashboard-card h-28 animate-pulse"
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Error state for recommendations */}
+            {recError && !recLoading && (
+              <div className="dashboard-card py-6 text-center">
+                <p className="text-sm text-danger-500">{recError}</p>
+                <p className="mt-1 text-xs text-soil-400">
+                  Could not load recommendations for this field.
+                </p>
+              </div>
+            )}
+
+            {/* Recommendation cards — stored items (with real recId for PATCH) */}
+            {!recLoading && !recError && recStoredItems && recStoredItems.length > 0 && (
+              <div className="space-y-3">
+                {recStoredItems.map((item) => (
+                  <RecommendationCard
+                    key={item.id}
+                    recId={item.id}
+                    type={item.type as "irrigation" | "fertilization" | "pest_risk"}
+                    data={item.payload as never}
+                    lifecycleStatus={
+                      lifecycleStatuses[item.id] ?? (item.status as RecommendationStatus)
+                    }
+                    generatedAt={item.generated_at}
+                    onStatusChange={(id, s) =>
+                      handleRecStatusChange(id, s)
+                    }
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Recommendation cards — real-time (fallback when no stored items) */}
+            {!recLoading && !recError && !recStoredItems && recSummary && (
+              <div className="space-y-3">
+                {/* Irrigation card */}
+                {recSummary.irrigation && (
+                  <RecommendationCard
+                    type="irrigation"
+                    data={recSummary.irrigation}
+                    lifecycleStatus={
+                      lifecycleStatuses.irrigation ?? undefined
+                    }
+                    generatedAt={recSummary.generated_at}
+                    onStatusChange={(_, s) =>
+                      handleRecStatusChange("irrigation", s)
+                    }
+                  />
+                )}
+
+                {/* Fertilization card */}
+                {recSummary.fertilization && (
+                  <RecommendationCard
+                    type="fertilization"
+                    data={recSummary.fertilization}
+                    lifecycleStatus={
+                      lifecycleStatuses.fertilization ?? undefined
+                    }
+                    generatedAt={recSummary.generated_at}
+                    onStatusChange={(_, s) =>
+                      handleRecStatusChange("fertilization", s)
+                    }
+                  />
+                )}
+
+                {/* Pest risk cards (one per pest) */}
+                {recSummary.pest_risk.map((pest) => (
+                  <RecommendationCard
+                    key={`${pest.pest_name}-${pest.risk_level}`}
+                    type="pest_risk"
+                    data={pest}
+                    lifecycleStatus={
+                      lifecycleStatuses[`pest_${pest.pest_name}`] ?? undefined
+                    }
+                    generatedAt={recSummary.generated_at}
+                    onStatusChange={(_, s) =>
+                      handleRecStatusChange(`pest_${pest.pest_name}`, s)
+                    }
+                  />
+                ))}
+
+                {/* Empty state */}
+                {!recSummary.irrigation &&
+                  !recSummary.fertilization &&
+                  recSummary.pest_risk.length === 0 && (
+                    <div className="dashboard-card py-8 text-center">
+                      <p className="text-sm text-soil-400">
+                        No active recommendations. The system will generate
+                        suggestions once sufficient sensor data is available.
+                      </p>
+                    </div>
+                  )}
+              </div>
+            )}
+
+            {/* No stored and no real-time */}
+            {!recLoading && !recError && !recStoredItems && !recSummary && (
+              <div className="dashboard-card py-8 text-center">
+                <p className="text-sm text-soil-400">
+                  No active recommendations. The system will generate
+                  suggestions once sufficient sensor data is available.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* ── Yield Prediction Section ────────────────────── */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-bold text-leaf-800">
+              Yield Forecast
+            </h2>
+            <YieldPredictionCard
+              prediction={prediction}
+              isLoading={predLoading}
+              error={predError}
+              onRetry={predRefresh}
+            />
           </div>
         </>
       )}

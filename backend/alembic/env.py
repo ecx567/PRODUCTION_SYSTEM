@@ -32,6 +32,7 @@ from app.domain.auth.models import User
 from app.domain.auth.models_tenant import Tenant
 from app.domain.fields.models import Field
 from app.domain.notifications.models import AlertRule, AlertEvent
+from app.domain.recommendations.models import Recommendation
 
 target_metadata = Base.metadata
 

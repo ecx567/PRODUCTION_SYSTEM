@@ -164,7 +164,7 @@ export default function RuleFormModal({
     if (!open) return;
     setFieldsLoading(true);
     try {
-      const result = await getFields(null, 100);
+      const result = await getFields(undefined, 100);
       setFields(result.items);
     } catch {
       // Ignore - field selector will show "All Fields" only
@@ -183,10 +183,11 @@ export default function RuleFormModal({
     value: FormData[K],
   ) {
     setFormData((prev) => ({ ...prev, [key]: value }));
-    if (errors[key]) {
+    const errKey = key as keyof FormErrors;
+    if (errors[errKey]) {
       setErrors((prev) => {
         const next = { ...prev };
-        delete next[key];
+        delete next[errKey];
         return next;
       });
     }

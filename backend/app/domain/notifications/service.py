@@ -233,6 +233,97 @@ class NotificationService:
         return AlertEventResponse.model_validate(event)
 
     # ═══════════════════════════════════════════════════════════
+    # Direct Alert Event Creation (recommendation bridge)
+    # ═══════════════════════════════════════════════════════════
+
+    async def create_event(
+        self,
+        tenant_id: UUID | str,
+        field_id: UUID | str,
+        severity: str,
+        message: str,
+        db: AsyncSession,
+        rule_id: UUID | None = None,
+        metric_type: str = "recommendation",
+        actual_value: float = 0.0,
+        threshold: float = 0.0,
+        redis: AsyncRedis | None = None,
+    ) -> AlertEventResponse | None:
+        """Create a direct alert event, bypassing rule evaluation.
+
+        This is used by the recommendation engine's alert bridge to fire
+        events for high/critical severity recommendations without requiring
+        a pre-configured alert rule.
+
+        If ``rule_id`` is not provided, the method attempts to find any
+        enabled rule for the tenant. If none exists, the event is logged
+        but not persisted.
+
+        Returns the created ``AlertEventResponse`` or ``None`` if the
+        event could not be persisted (e.g., no rule found, DB error).
+
+        This method is intentionally non-blocking — callers should not
+        depend on its result for their core logic.
+        """
+        tenant_uuid = UUID(str(tenant_id))
+        field_uuid = UUID(str(field_id))
+
+        try:
+            # Resolve or find a rule
+            if rule_id is not None:
+                resolved_rule_id = UUID(str(rule_id))
+            else:
+                stmt = select(AlertRule).where(
+                    AlertRule.tenant_id == tenant_uuid,
+                    AlertRule.enabled.is_(True),
+                ).limit(1)
+                result = await db.execute(stmt)
+                rule = result.scalar_one_or_none()
+                if rule is None:
+                    logger.warning(
+                        "Cannot create alert event: no enabled alert rule found "
+                        "for tenant %s",
+                        tenant_id,
+                    )
+                    return None
+                resolved_rule_id = rule.id
+
+            now = datetime.now(timezone.utc)
+            event = AlertEvent(
+                tenant_id=tenant_uuid,
+                rule_id=resolved_rule_id,
+                field_id=field_uuid,
+                metric_type=metric_type,
+                actual_value=actual_value,
+                threshold=threshold,
+                severity=severity,
+                message=message,
+                triggered_at=now,
+            )
+            db.add(event)
+            await db.flush()
+            await db.refresh(event)
+
+            event_response = AlertEventResponse.model_validate(event)
+            logger.info(
+                "Alert event created via bridge: field=%s severity=%s message='%s'",
+                field_id, severity, message,
+            )
+
+            # Publish to Redis SSE if client provided
+            if redis is not None:
+                await self._publish_alert(redis, event_response)
+
+            return event_response
+
+        except Exception:
+            logger.exception(
+                "Failed to create alert event for field=%s severity=%s",
+                field_id, severity,
+            )
+            return None
+
+    # ═══════════════════════════════════════════════════════════
     # Alert Evaluation Engine
     # ═══════════════════════════════════════════════════════════
 

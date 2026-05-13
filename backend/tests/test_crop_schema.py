@@ -48,7 +48,7 @@ class TestValidateCropType:
 
     # ── Invalid crop types — must be rejected ────────────────
 
-    @pytest.mark.parametrize("crop", ["lavender", "wheat", "tomato", "", "   "])
+    @pytest.mark.parametrize("crop", ["lavender", "wheat", "", "   "])
     def test_invalid_crop_type_rejected(self, crop: str):
         """Unknown crop types raise ValidationError."""
         with pytest.raises(ValidationError, match="Invalid crop type"):
@@ -76,10 +76,12 @@ class TestValidateCropType:
     # ── ALLOWED_CROP_TYPES set ───────────────────────────────
 
     def test_allowed_set_contains_expected_types(self):
-        """ALLOWED_CROP_TYPES contains all 10 expected crop types."""
+        """ALLOWED_CROP_TYPES contains all 18 expected crop types."""
         expected = {
             "banana", "maize", "cacao", "rice",
             "coffee", "sugarcane", "soybean", "sunflower", "palm_oil", "cotton",
+            "cassava", "sweet_potato", "coconut", "pineapple",
+            "mango", "papaya", "tomato", "beans",
         }
         assert ALLOWED_CROP_TYPES == expected
 

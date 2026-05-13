@@ -31,6 +31,7 @@ export default function DeleteDialog({
     setIsLoading(true);
     setErrors({});
 
+    if (!rule) return;
     try {
       await deleteRule(rule.id);
       onDeleted(rule.id);

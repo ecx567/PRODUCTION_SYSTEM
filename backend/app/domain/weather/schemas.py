@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CurrentWeather(BaseModel):
@@ -45,6 +45,37 @@ class Forecast(BaseModel):
     days: int
     units: dict[str, str]
     daily: list[ForecastDay]
+
+
+class ForecastDayHargreaves(BaseModel):
+    """Single day forecast with Hargreaves-Samani ET₀ calculation."""
+
+    date: str
+    temperature_2m_max: float | None = None
+    temperature_2m_min: float | None = None
+    temperature_2m_mean: float | None = None
+    precipitation_sum: float | None = None
+    et0_hargreaves: float | None = Field(
+        default=None,
+        description="Reference evapotranspiration (mm) calculated via Hargreaves-Samani method.",
+    )
+
+
+class HargreavesForecast(BaseModel):
+    """Multi-day forecast with Hargreaves-Samani ET₀ values.
+
+    ET₀ is calculated server-side using the Hargreaves-Samani equation:
+        ET₀ = 0.0023 × Ra × (T_mean + 17.8) × sqrt(T_max - T_min)
+
+    This provides an alternative to Open-Meteo's FAO-56 Penman-Monteith
+    ET₀ when only temperature data is available.
+    """
+
+    latitude: float
+    longitude: float
+    days: int
+    units: dict[str, str]
+    daily: list[ForecastDayHargreaves]
 
 
 class WeatherAlert(BaseModel):

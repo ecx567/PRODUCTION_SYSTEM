@@ -7,10 +7,94 @@ All schemas are designed to be returned by the API and consumed by the dashboard
 from __future__ import annotations
 
 from datetime import datetime
+from enum import Enum
 from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+
+
+# ── Enums ───────────────────────────────────────────────────
+
+class RecommendationStatus(str, Enum):
+    """Lifecycle status for a recommendation."""
+
+    ACTIVE = "active"
+    ACKNOWLEDGED = "acknowledged"
+    DISMISSED = "dismissed"
+    APPLIED = "applied"
+
+
+class RecommendationSeverity(str, Enum):
+    """Severity level for a recommendation."""
+
+    INFO = "info"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+# ── Recommendation Status Schemas (lifecycle) ───────────────
+
+class RecommendationStatusUpdate(BaseModel):
+    """Request payload for updating a recommendation's lifecycle status."""
+
+    status: RecommendationStatus = Field(
+        ...,
+        description="New lifecycle status. Valid transitions:\n"
+        "  - active → acknowledged, dismissed, applied\n"
+        "  - acknowledged → applied, dismissed\n"
+        "  - dismissed → active\n"
+        "  - applied → (terminal — no transitions out)",
+    )
+    comment: str | None = Field(
+        default=None, max_length=500,
+        description="Optional farmer comment for the status change.",
+    )
+
+
+class RecommendationStatusResponse(BaseModel):
+    """Response payload after a lifecycle status update."""
+
+    id: UUID
+    field_id: UUID
+    type: str
+    status: RecommendationStatus
+    severity: RecommendationSeverity
+    title: str | None = None
+    acknowledged_at: datetime | None = None
+    dismissed_at: datetime | None = None
+    updated_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+# ── Stored Recommendation List (for dashboard) ──────────────
+
+class StoredRecommendationItem(BaseModel):
+    """A stored recommendation returned by the list endpoint."""
+
+    id: UUID
+    field_id: UUID
+    type: str
+    payload: dict
+    generated_at: datetime
+    status: str
+    severity: str
+    title: str | None = None
+    acknowledged_at: datetime | None = None
+    dismissed_at: datetime | None = None
+    applied_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class StoredRecommendationList(BaseModel):
+    """Paginated list of stored recommendations."""
+
+    items: list[StoredRecommendationItem]
+    total: int
 
 
 # ── Irrigation Recommendation ───────────────────────────────

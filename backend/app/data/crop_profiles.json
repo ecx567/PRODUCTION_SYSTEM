@@ -1,0 +1,620 @@
+[
+  {
+    "name": "banana",
+    "display_name": "Banana",
+    "kc_initial": 0.5,
+    "kc_mid": 1.2,
+    "kc_end": 1.1,
+    "stage_lengths": [120, 90, 120, 60],
+    "fertilizer_rates": {
+      "planting": {"n": 30, "p": 40, "k": 60},
+      "vegetative": {"n": 120, "p": 30, "k": 200},
+      "reproductive": {"n": 60, "p": 50, "k": 150}
+    },
+    "pests": [
+      {
+        "name": "Black Sigatoka",
+        "scientific_name": "Mycosphaerella fijiensis",
+        "gdd_threshold": 700.0,
+        "t_base": 12.0,
+        "optimal_temp_min": 22.0,
+        "optimal_temp_max": 28.0,
+        "requires_leaf_wetness": true,
+        "leaf_wetness_hours_min": 6.0,
+        "min_humidity": 80.0,
+        "recommendation": "Apply protective fungicide (mancozeb or triazole). Improve air circulation by deleafing. Monitor youngest leaf spotted."
+      },
+      {
+        "name": "Panama Disease (Fusarium wilt)",
+        "scientific_name": "Fusarium oxysporum f. sp. cubense",
+        "gdd_threshold": 500.0,
+        "t_base": 14.0,
+        "optimal_temp_min": 24.0,
+        "optimal_temp_max": 30.0,
+        "requires_leaf_wetness": false,
+        "min_humidity": 70.0,
+        "recommendation": "Use resistant varieties. Implement strict quarantine. Improve drainage. Avoid infested soil movement."
+      }
+    ],
+    "taw_default": 150.0,
+    "gdd_base_temp": 14.0,
+    "gdd_upper_temp": 35.0,
+    "metadata": {
+      "family": "Musaceae",
+      "growth_habit": "herbaceous perennial",
+      "reference": "FAO-56 Table 12 (banana)"
+    }
+  },
+  {
+    "name": "maize",
+    "display_name": "Maize",
+    "kc_initial": 0.3,
+    "kc_mid": 1.2,
+    "kc_end": 0.6,
+    "stage_lengths": [20, 35, 40, 30],
+    "fertilizer_rates": {
+      "planting": {"n": 40, "p": 50, "k": 40},
+      "vegetative": {"n": 100, "p": 30, "k": 60},
+      "reproductive": {"n": 50, "p": 20, "k": 30}
+    },
+    "pests": [
+      {
+        "name": "Fall Armyworm",
+        "scientific_name": "Spodoptera frugiperda",
+        "gdd_threshold": 800.0,
+        "t_base": 10.0,
+        "optimal_temp_min": 20.0,
+        "optimal_temp_max": 30.0,
+        "requires_leaf_wetness": false,
+        "min_humidity": 60.0,
+        "recommendation": "Apply biological control (Bacillus thuringiensis) or insecticide if infestation detected. Monitor whorls for larvae."
+      }
+    ],
+    "taw_default": 150.0,
+    "gdd_base_temp": 10.0,
+    "gdd_upper_temp": 35.0,
+    "metadata": {
+      "family": "Poaceae",
+      "growth_habit": "annual grass",
+      "reference": "FAO-56 Table 12 (maize)"
+    }
+  },
+  {
+    "name": "cacao",
+    "display_name": "Cacao",
+    "kc_initial": 0.8,
+    "kc_mid": 1.05,
+    "kc_end": 0.95,
+    "stage_lengths": [30, 60, 120, 60],
+    "fertilizer_rates": {
+      "planting": {"n": 20, "p": 30, "k": 50},
+      "vegetative": {"n": 80, "p": 20, "k": 100},
+      "reproductive": {"n": 60, "p": 30, "k": 120}
+    },
+    "pests": [
+      {
+        "name": "Witches' Broom",
+        "scientific_name": "Moniliophthora perniciosa",
+        "gdd_threshold": 600.0,
+        "t_base": 14.0,
+        "optimal_temp_min": 22.0,
+        "optimal_temp_max": 30.0,
+        "requires_leaf_wetness": false,
+        "min_humidity": 85.0,
+        "recommendation": "Prune infected brooms. Apply copper-based fungicide. Improve canopy ventilation. Remove infected pods."
+      },
+      {
+        "name": "Frosty Pod Rot",
+        "scientific_name": "Moniliophthora roreri",
+        "gdd_threshold": 550.0,
+        "t_base": 14.0,
+        "optimal_temp_min": 22.0,
+        "optimal_temp_max": 28.0,
+        "requires_leaf_wetness": true,
+        "leaf_wetness_hours_min": 8.0,
+        "min_humidity": 85.0,
+        "recommendation": "Remove and destroy infected pods. Apply copper fungicide. Improve canopy ventilation and reduce shade."
+      }
+    ],
+    "taw_default": 150.0,
+    "gdd_base_temp": 14.0,
+    "gdd_upper_temp": 33.0,
+    "metadata": {
+      "family": "Malvaceae",
+      "growth_habit": "evergreen tree",
+      "reference": "FAO-56 Table 12 (cacao)"
+    }
+  },
+  {
+    "name": "rice",
+    "display_name": "Rice",
+    "kc_initial": 1.0,
+    "kc_mid": 1.2,
+    "kc_end": 0.8,
+    "stage_lengths": [30, 30, 60, 30],
+    "fertilizer_rates": {
+      "planting": {"n": 30, "p": 30, "k": 30},
+      "vegetative": {"n": 60, "p": 20, "k": 40},
+      "reproductive": {"n": 30, "p": 15, "k": 30}
+    },
+    "pests": [
+      {
+        "name": "Rice Blast",
+        "scientific_name": "Magnaporthe grisea",
+        "gdd_threshold": 500.0,
+        "t_base": 10.0,
+        "optimal_temp_min": 25.0,
+        "optimal_temp_max": 28.0,
+        "requires_leaf_wetness": true,
+        "leaf_wetness_hours_min": 6.0,
+        "min_humidity": 90.0,
+        "recommendation": "Apply systemic fungicide (tricyclazole or azoxystrobin). Maintain proper water management. Avoid excessive nitrogen."
+      }
+    ],
+    "taw_default": 200.0,
+    "gdd_base_temp": 10.0,
+    "gdd_upper_temp": 35.0,
+    "metadata": {
+      "family": "Poaceae",
+      "growth_habit": "annual grass",
+      "reference": "FAO-56 Table 12 (rice)"
+    }
+  },
+  {
+    "name": "coffee",
+    "display_name": "Coffee",
+    "kc_initial": 0.9,
+    "kc_mid": 1.1,
+    "kc_end": 0.95,
+    "stage_lengths": [60, 90, 120, 90],
+    "fertilizer_rates": {
+      "planting": {"n": 20, "p": 40, "k": 30},
+      "vegetative": {"n": 80, "p": 20, "k": 80},
+      "reproductive": {"n": 60, "p": 30, "k": 100}
+    },
+    "pests": [
+      {
+        "name": "Coffee Leaf Rust",
+        "scientific_name": "Hemileia vastatrix",
+        "gdd_threshold": 650.0,
+        "t_base": 12.0,
+        "optimal_temp_min": 20.0,
+        "optimal_temp_max": 28.0,
+        "requires_leaf_wetness": true,
+        "leaf_wetness_hours_min": 6.0,
+        "min_humidity": 85.0,
+        "recommendation": "Apply copper-based fungicide. Use resistant varieties. Improve air circulation through pruning."
+      }
+    ],
+    "taw_default": 130.0,
+    "gdd_base_temp": 12.0,
+    "gdd_upper_temp": 32.0,
+    "metadata": {
+      "family": "Rubiaceae",
+      "growth_habit": "evergreen shrub",
+      "reference": "FAO-56 Table 12 (coffee)"
+    }
+  },
+  {
+    "name": "sugarcane",
+    "display_name": "Sugarcane",
+    "kc_initial": 0.4,
+    "kc_mid": 1.25,
+    "kc_end": 0.75,
+    "stage_lengths": [35, 60, 190, 120],
+    "fertilizer_rates": {
+      "planting": {"n": 30, "p": 60, "k": 60},
+      "vegetative": {"n": 120, "p": 30, "k": 120},
+      "reproductive": {"n": 60, "p": 40, "k": 100}
+    },
+    "pests": [
+      {
+        "name": "Sugarcane Borer",
+        "scientific_name": "Diatraea saccharalis",
+        "gdd_threshold": 700.0,
+        "t_base": 12.0,
+        "optimal_temp_min": 22.0,
+        "optimal_temp_max": 30.0,
+        "requires_leaf_wetness": false,
+        "min_humidity": 60.0,
+        "recommendation": "Release Trichogramma parasitic wasps. Apply insecticide if borer damage exceeds threshold. Use resistant varieties."
+      }
+    ],
+    "taw_default": 170.0,
+    "gdd_base_temp": 12.0,
+    "gdd_upper_temp": 36.0,
+    "metadata": {
+      "family": "Poaceae",
+      "growth_habit": "perennial grass",
+      "reference": "FAO-56 Table 12 (sugarcane)"
+    }
+  },
+  {
+    "name": "soybean",
+    "display_name": "Soybean",
+    "kc_initial": 0.35,
+    "kc_mid": 1.15,
+    "kc_end": 0.5,
+    "stage_lengths": [15, 25, 60, 25],
+    "fertilizer_rates": {
+      "planting": {"n": 10, "p": 50, "k": 50},
+      "vegetative": {"n": 40, "p": 30, "k": 60},
+      "reproductive": {"n": 30, "p": 40, "k": 50}
+    },
+    "pests": [
+      {
+        "name": "Soybean Rust",
+        "scientific_name": "Phakopsora pachyrhizi",
+        "gdd_threshold": 550.0,
+        "t_base": 12.0,
+        "optimal_temp_min": 18.0,
+        "optimal_temp_max": 28.0,
+        "requires_leaf_wetness": true,
+        "leaf_wetness_hours_min": 6.0,
+        "min_humidity": 80.0,
+        "recommendation": "Apply protective fungicide at early flowering. Use resistant varieties. Scout weekly after canopy closure."
+      }
+    ],
+    "taw_default": 140.0,
+    "gdd_base_temp": 10.0,
+    "gdd_upper_temp": 35.0,
+    "metadata": {
+      "family": "Fabaceae",
+      "growth_habit": "annual legume",
+      "reference": "FAO-56 Table 12 (soybean)"
+    }
+  },
+  {
+    "name": "sunflower",
+    "display_name": "Sunflower",
+    "kc_initial": 0.35,
+    "kc_mid": 1.15,
+    "kc_end": 0.35,
+    "stage_lengths": [20, 30, 40, 25],
+    "fertilizer_rates": {
+      "planting": {"n": 30, "p": 40, "k": 40},
+      "vegetative": {"n": 80, "p": 30, "k": 60},
+      "reproductive": {"n": 40, "p": 50, "k": 80}
+    },
+    "pests": [],
+    "taw_default": 140.0,
+    "gdd_base_temp": 8.0,
+    "gdd_upper_temp": 35.0,
+    "metadata": {
+      "family": "Asteraceae",
+      "growth_habit": "annual herb",
+      "reference": "FAO-56 Table 12 (sunflower)"
+    }
+  },
+  {
+    "name": "palm_oil",
+    "display_name": "Oil Palm",
+    "kc_initial": 0.85,
+    "kc_mid": 1.0,
+    "kc_end": 0.95,
+    "stage_lengths": [180, 180, 365, 365],
+    "fertilizer_rates": {
+      "planting": {"n": 40, "p": 80, "k": 120},
+      "vegetative": {"n": 120, "p": 40, "k": 200},
+      "reproductive": {"n": 80, "p": 60, "k": 250}
+    },
+    "pests": [
+      {
+        "name": "Leaf Spot (Curvularia)",
+        "scientific_name": "Curvularia spp.",
+        "gdd_threshold": 500.0,
+        "t_base": 14.0,
+        "optimal_temp_min": 24.0,
+        "optimal_temp_max": 32.0,
+        "requires_leaf_wetness": false,
+        "min_humidity": 85.0,
+        "recommendation": "Apply copper-based fungicide. Improve drainage. Maintain balanced fertilizer program."
+      }
+    ],
+    "taw_default": 160.0,
+    "gdd_base_temp": 15.0,
+    "gdd_upper_temp": 33.0,
+    "metadata": {
+      "family": "Arecaceae",
+      "growth_habit": "perennial palm",
+      "reference": "FAO-56 Table 12 (oil palm)"
+    }
+  },
+  {
+    "name": "cotton",
+    "display_name": "Cotton",
+    "kc_initial": 0.35,
+    "kc_mid": 1.2,
+    "kc_end": 0.7,
+    "stage_lengths": [30, 50, 60, 55],
+    "fertilizer_rates": {
+      "planting": {"n": 30, "p": 40, "k": 30},
+      "vegetative": {"n": 90, "p": 30, "k": 60},
+      "reproductive": {"n": 50, "p": 20, "k": 80}
+    },
+    "pests": [
+      {
+        "name": "Cotton Bollworm",
+        "scientific_name": "Helicoverpa armigera",
+        "gdd_threshold": 750.0,
+        "t_base": 12.0,
+        "optimal_temp_min": 22.0,
+        "optimal_temp_max": 32.0,
+        "requires_leaf_wetness": false,
+        "min_humidity": 55.0,
+        "recommendation": "Monitor with pheromone traps. Apply biological control (Bt) or insecticide at threshold. Practice crop rotation."
+      }
+    ],
+    "taw_default": 150.0,
+    "gdd_base_temp": 12.0,
+    "gdd_upper_temp": 35.0,
+    "metadata": {
+      "family": "Malvaceae",
+      "growth_habit": "annual shrub",
+      "reference": "FAO-56 Table 12 (cotton)"
+    }
+  },
+  {
+    "name": "cassava",
+    "display_name": "Cassava",
+    "kc_initial": 0.5,
+    "kc_mid": 1.1,
+    "kc_end": 0.7,
+    "stage_lengths": [30, 40, 150, 80],
+    "fertilizer_rates": {
+      "planting": {"n": 20, "p": 40, "k": 60},
+      "vegetative": {"n": 60, "p": 20, "k": 80},
+      "reproductive": {"n": 30, "p": 30, "k": 100}
+    },
+    "pests": [
+      {
+        "name": "Cassava Mosaic Disease",
+        "scientific_name": "Begomovirus spp.",
+        "gdd_threshold": 450.0,
+        "t_base": 14.0,
+        "optimal_temp_min": 22.0,
+        "optimal_temp_max": 30.0,
+        "requires_leaf_wetness": false,
+        "min_humidity": 65.0,
+        "recommendation": "Use virus-free planting material. Remove infected plants. Control whitefly vector populations."
+      }
+    ],
+    "taw_default": 120.0,
+    "gdd_base_temp": 14.0,
+    "gdd_upper_temp": 35.0,
+    "metadata": {
+      "family": "Euphorbiaceae",
+      "growth_habit": "perennial shrub",
+      "reference": "FAO-56 Table 12 (cassava)"
+    }
+  },
+  {
+    "name": "sweet_potato",
+    "display_name": "Sweet Potato",
+    "kc_initial": 0.5,
+    "kc_mid": 1.15,
+    "kc_end": 0.65,
+    "stage_lengths": [15, 25, 60, 50],
+    "fertilizer_rates": {
+      "planting": {"n": 20, "p": 40, "k": 50},
+      "vegetative": {"n": 50, "p": 20, "k": 70},
+      "reproductive": {"n": 30, "p": 30, "k": 80}
+    },
+    "pests": [
+      {
+        "name": "Sweet Potato Weevil",
+        "scientific_name": "Cylas formicarius",
+        "gdd_threshold": 600.0,
+        "t_base": 13.0,
+        "optimal_temp_min": 24.0,
+        "optimal_temp_max": 30.0,
+        "requires_leaf_wetness": false,
+        "min_humidity": 60.0,
+        "recommendation": "Use clean planting material. Practice crop rotation. Hill up soil to reduce cracking. Apply insecticide if needed."
+      }
+    ],
+    "taw_default": 130.0,
+    "gdd_base_temp": 13.0,
+    "gdd_upper_temp": 34.0,
+    "metadata": {
+      "family": "Convolvulaceae",
+      "growth_habit": "perennial vine",
+      "reference": "FAO-56 Table 12 (sweet potato)"
+    }
+  },
+  {
+    "name": "coconut",
+    "display_name": "Coconut",
+    "kc_initial": 0.8,
+    "kc_mid": 1.0,
+    "kc_end": 0.95,
+    "stage_lengths": [180, 365, 365, 365],
+    "fertilizer_rates": {
+      "planting": {"n": 30, "p": 60, "k": 80},
+      "vegetative": {"n": 100, "p": 40, "k": 160},
+      "reproductive": {"n": 80, "p": 50, "k": 200}
+    },
+    "pests": [
+      {
+        "name": "Coconut Rhinoceros Beetle",
+        "scientific_name": "Oryctes rhinoceros",
+        "gdd_threshold": 800.0,
+        "t_base": 15.0,
+        "optimal_temp_min": 24.0,
+        "optimal_temp_max": 32.0,
+        "requires_leaf_wetness": false,
+        "min_humidity": 65.0,
+        "recommendation": "Maintain field sanitation. Use pheromone traps. Apply biological control (Metarhizium). Remove breeding sites."
+      }
+    ],
+    "taw_default": 160.0,
+    "gdd_base_temp": 15.0,
+    "gdd_upper_temp": 35.0,
+    "metadata": {
+      "family": "Arecaceae",
+      "growth_habit": "perennial palm",
+      "reference": "FAO-56 Table 12 (coconut)"
+    }
+  },
+  {
+    "name": "pineapple",
+    "display_name": "Pineapple",
+    "kc_initial": 0.5,
+    "kc_mid": 0.9,
+    "kc_end": 0.8,
+    "stage_lengths": [60, 120, 150, 90],
+    "fertilizer_rates": {
+      "planting": {"n": 20, "p": 40, "k": 60},
+      "vegetative": {"n": 80, "p": 20, "k": 100},
+      "reproductive": {"n": 40, "p": 30, "k": 120}
+    },
+    "pests": [],
+    "taw_default": 120.0,
+    "gdd_base_temp": 14.0,
+    "gdd_upper_temp": 35.0,
+    "metadata": {
+      "family": "Bromeliaceae",
+      "growth_habit": "herbaceous perennial",
+      "reference": "FAO-56 Table 12 (pineapple)"
+    }
+  },
+  {
+    "name": "mango",
+    "display_name": "Mango",
+    "kc_initial": 0.7,
+    "kc_mid": 1.05,
+    "kc_end": 0.8,
+    "stage_lengths": [30, 60, 120, 60],
+    "fertilizer_rates": {
+      "planting": {"n": 30, "p": 50, "k": 40},
+      "vegetative": {"n": 100, "p": 30, "k": 80},
+      "reproductive": {"n": 60, "p": 40, "k": 120}
+    },
+    "pests": [
+      {
+        "name": "Mango Anthracnose",
+        "scientific_name": "Colletotrichum gloeosporioides",
+        "gdd_threshold": 500.0,
+        "t_base": 13.0,
+        "optimal_temp_min": 22.0,
+        "optimal_temp_max": 28.0,
+        "requires_leaf_wetness": true,
+        "leaf_wetness_hours_min": 6.0,
+        "min_humidity": 85.0,
+        "recommendation": "Apply copper-based fungicide during flowering. Prune to improve airflow. Remove and destroy infected plant debris."
+      }
+    ],
+    "taw_default": 150.0,
+    "gdd_base_temp": 15.0,
+    "gdd_upper_temp": 34.0,
+    "metadata": {
+      "family": "Anacardiaceae",
+      "growth_habit": "evergreen tree",
+      "reference": "FAO-56 Table 12 (mango)"
+    }
+  },
+  {
+    "name": "papaya",
+    "display_name": "Papaya",
+    "kc_initial": 0.6,
+    "kc_mid": 1.1,
+    "kc_end": 0.9,
+    "stage_lengths": [30, 60, 180, 90],
+    "fertilizer_rates": {
+      "planting": {"n": 30, "p": 50, "k": 40},
+      "vegetative": {"n": 80, "p": 30, "k": 80},
+      "reproductive": {"n": 60, "p": 40, "k": 120}
+    },
+    "pests": [
+      {
+        "name": "Papaya Ringspot Virus",
+        "scientific_name": "Potyvirus spp.",
+        "gdd_threshold": 400.0,
+        "t_base": 14.0,
+        "optimal_temp_min": 24.0,
+        "optimal_temp_max": 30.0,
+        "requires_leaf_wetness": false,
+        "min_humidity": 60.0,
+        "recommendation": "Use virus-resistant varieties. Control aphid vectors. Remove infected trees immediately. Roguing is essential."
+      }
+    ],
+    "taw_default": 130.0,
+    "gdd_base_temp": 14.0,
+    "gdd_upper_temp": 34.0,
+    "metadata": {
+      "family": "Caricaceae",
+      "growth_habit": "herbaceous tree",
+      "reference": "FAO-56 Table 12 (papaya)"
+    }
+  },
+  {
+    "name": "tomato",
+    "display_name": "Tomato",
+    "kc_initial": 0.6,
+    "kc_mid": 1.15,
+    "kc_end": 0.8,
+    "stage_lengths": [15, 25, 40, 30],
+    "fertilizer_rates": {
+      "planting": {"n": 30, "p": 50, "k": 40},
+      "vegetative": {"n": 80, "p": 30, "k": 80},
+      "reproductive": {"n": 60, "p": 40, "k": 100}
+    },
+    "pests": [
+      {
+        "name": "Late Blight",
+        "scientific_name": "Phytophthora infestans",
+        "gdd_threshold": 450.0,
+        "t_base": 10.0,
+        "optimal_temp_min": 15.0,
+        "optimal_temp_max": 22.0,
+        "requires_leaf_wetness": true,
+        "leaf_wetness_hours_min": 8.0,
+        "min_humidity": 85.0,
+        "recommendation": "Apply preventive fungicide (chlorothalonil or copper). Improve air circulation. Remove infected leaves. Avoid overhead irrigation."
+      }
+    ],
+    "taw_default": 120.0,
+    "gdd_base_temp": 10.0,
+    "gdd_upper_temp": 32.0,
+    "metadata": {
+      "family": "Solanaceae",
+      "growth_habit": "annual vine",
+      "reference": "FAO-56 Table 12 (tomato)"
+    }
+  },
+  {
+    "name": "beans",
+    "display_name": "Beans",
+    "kc_initial": 0.35,
+    "kc_mid": 1.05,
+    "kc_end": 0.45,
+    "stage_lengths": [10, 20, 35, 20],
+    "fertilizer_rates": {
+      "planting": {"n": 15, "p": 40, "k": 30},
+      "vegetative": {"n": 30, "p": 20, "k": 40},
+      "reproductive": {"n": 20, "p": 30, "k": 50}
+    },
+    "pests": [
+      {
+        "name": "Bean Rust",
+        "scientific_name": "Uromyces appendiculatus",
+        "gdd_threshold": 500.0,
+        "t_base": 12.0,
+        "optimal_temp_min": 18.0,
+        "optimal_temp_max": 26.0,
+        "requires_leaf_wetness": true,
+        "leaf_wetness_hours_min": 6.0,
+        "min_humidity": 85.0,
+        "recommendation": "Apply protective fungicide. Use resistant varieties. Practicing crop rotation of 2+ years."
+      }
+    ],
+    "taw_default": 120.0,
+    "gdd_base_temp": 10.0,
+    "gdd_upper_temp": 33.0,
+    "metadata": {
+      "family": "Fabaceae",
+      "growth_habit": "annual legume",
+      "reference": "FAO-56 Table 12 (beans)"
+    }
+  }
+]

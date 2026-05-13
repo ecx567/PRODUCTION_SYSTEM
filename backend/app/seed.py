@@ -47,6 +47,15 @@ SEED_FIELDS: list[dict] = [
     {"name": "Sunflower Patch", "crop_type": "sunflower", "area_ha": 12.3, "location": "POINT(-79.2 8.4)"},
     {"name": "Oil Palm Estate", "crop_type": "palm_oil",  "area_ha": 37.8, "location": "POINT(-79.9 8.7)"},
     {"name": "Cotton Field",    "crop_type": "cotton",    "area_ha": 28.5, "location": "POINT(-79.4 9.1)"},
+    # ── Expansion (PR 1 — crop profiles) ─────────────────────
+    {"name": "Cassava Block",   "crop_type": "cassava",    "area_ha": 15.0, "location": "POINT(-79.5 8.5)"},
+    {"name": "Sweet Potato Row","crop_type": "sweet_potato","area_ha": 8.5,  "location": "POINT(-79.3 8.3)"},
+    {"name": "Coconut Grove",   "crop_type": "coconut",    "area_ha": 22.0, "location": "POINT(-79.7 8.8)"},
+    {"name": "Pineapple Plot",  "crop_type": "pineapple",  "area_ha": 10.5, "location": "POINT(-79.2 8.6)"},
+    {"name": "Mango Orchard",   "crop_type": "mango",      "area_ha": 18.0, "location": "POINT(-79.6 8.4)"},
+    {"name": "Papaya Patch",    "crop_type": "papaya",     "area_ha": 6.5,  "location": "POINT(-79.4 8.7)"},
+    {"name": "Tomato Beds",     "crop_type": "tomato",     "area_ha": 3.2,  "location": "POINT(-79.3 8.9)"},
+    {"name": "Beans Field",     "crop_type": "beans",      "area_ha": 12.0, "location": "POINT(-79.5 9.0)"},
 ]
 
 SENSOR_MAP: dict[str, dict[str, tuple[float, float]]] = {
@@ -60,6 +69,15 @@ SENSOR_MAP: dict[str, dict[str, tuple[float, float]]] = {
     "sunflower": {"temp": (18, 34), "humidity": (40, 75), "soil_moisture": (20, 50), "rain": (0, 12)},
     "palm_oil":  {"temp": (24, 34), "humidity": (70, 95), "soil_moisture": (30, 65), "rain": (0, 22)},
     "cotton":    {"temp": (20, 36), "humidity": (40, 75), "soil_moisture": (20, 50), "rain": (0, 14)},
+    # ── Expansion (PR 1 — crop profiles) ─────────────────────
+    "cassava":     {"temp": (22, 34), "humidity": (50, 85), "soil_moisture": (20, 50), "rain": (0, 18)},
+    "sweet_potato":{"temp": (18, 32), "humidity": (45, 80), "soil_moisture": (20, 50), "rain": (0, 14)},
+    "coconut":     {"temp": (22, 34), "humidity": (65, 90), "soil_moisture": (25, 55), "rain": (0, 22)},
+    "pineapple":   {"temp": (20, 34), "humidity": (55, 85), "soil_moisture": (25, 55), "rain": (0, 16)},
+    "mango":       {"temp": (22, 36), "humidity": (50, 80), "soil_moisture": (20, 50), "rain": (0, 14)},
+    "papaya":      {"temp": (22, 34), "humidity": (60, 85), "soil_moisture": (25, 55), "rain": (0, 18)},
+    "tomato":      {"temp": (18, 30), "humidity": (55, 85), "soil_moisture": (30, 60), "rain": (0, 12)},
+    "beans":       {"temp": (16, 30), "humidity": (45, 80), "soil_moisture": (20, 50), "rain": (0, 14)},
 }
 
 TENANT_WIDE_RULES: list[dict] = [
@@ -123,6 +141,39 @@ FIELD_RULES_BY_CROP: dict[str, list[dict]] = {
         {"name": "Algodón: Estrés por Calor", "metric_type": "temp",          "condition": "gt", "threshold": 38.0, "severity": "critical", "cooldown_minutes": 60},
         {"name": "Algodón: Baja Humedad",     "metric_type": "humidity",      "condition": "lt", "threshold": 35.0, "severity": "critical", "cooldown_minutes": 30},
         {"name": "Algodón: Exceso de Lluvia", "metric_type": "rain",          "condition": "gt", "threshold": 16.0, "severity": "warning",  "cooldown_minutes": 60},
+    ],
+    # ── Expansion (PR 1 — crop profiles) ─────────────────────
+    "cassava": [
+        {"name": "Yuca: Estrés por Calor",        "metric_type": "temp",          "condition": "gt", "threshold": 36.0, "severity": "warning",  "cooldown_minutes": 60},
+        {"name": "Yuca: Sequía",                  "metric_type": "soil_moisture", "condition": "lt", "threshold": 18.0, "severity": "critical", "cooldown_minutes": 120},
+    ],
+    "sweet_potato": [
+        {"name": "Batata: Estrés por Frío",       "metric_type": "temp",          "condition": "lt", "threshold": 14.0, "severity": "warning",  "cooldown_minutes": 60},
+        {"name": "Batata: Exceso de Humedad",     "metric_type": "humidity",      "condition": "gt", "threshold": 85.0, "severity": "warning",  "cooldown_minutes": 30},
+    ],
+    "coconut": [
+        {"name": "Coco: Estrés por Calor",        "metric_type": "temp",          "condition": "gt", "threshold": 36.0, "severity": "critical", "cooldown_minutes": 60},
+        {"name": "Coco: Baja Humedad",            "metric_type": "humidity",      "condition": "lt", "threshold": 60.0, "severity": "warning",  "cooldown_minutes": 30},
+    ],
+    "pineapple": [
+        {"name": "Piña: Estrés Térmico Alto",     "metric_type": "temp",          "condition": "gt", "threshold": 36.0, "severity": "critical", "cooldown_minutes": 60},
+        {"name": "Piña: Estrés Hídrico",          "metric_type": "soil_moisture", "condition": "lt", "threshold": 20.0, "severity": "warning",  "cooldown_minutes": 60},
+    ],
+    "mango": [
+        {"name": "Mango: Estrés por Calor",       "metric_type": "temp",          "condition": "gt", "threshold": 38.0, "severity": "critical", "cooldown_minutes": 60},
+        {"name": "Mango: Alta Humedad — Antracnosis","metric_type": "humidity",  "condition": "gt", "threshold": 85.0, "severity": "warning",  "cooldown_minutes": 30},
+    ],
+    "papaya": [
+        {"name": "Papaya: Estrés por Frío",       "metric_type": "temp",          "condition": "lt", "threshold": 18.0, "severity": "critical", "cooldown_minutes": 60},
+        {"name": "Papaya: Exceso de Lluvia",      "metric_type": "rain",          "condition": "gt", "threshold": 20.0, "severity": "warning",  "cooldown_minutes": 60},
+    ],
+    "tomato": [
+        {"name": "Tomate: Estrés por Calor",      "metric_type": "temp",          "condition": "gt", "threshold": 32.0, "severity": "critical", "cooldown_minutes": 60},
+        {"name": "Tomate: Alta Humedad — Tizón",  "metric_type": "humidity",      "condition": "gt", "threshold": 85.0, "severity": "warning",  "cooldown_minutes": 30},
+    ],
+    "beans": [
+        {"name": "Frijol: Estrés por Calor",      "metric_type": "temp",          "condition": "gt", "threshold": 32.0, "severity": "critical", "cooldown_minutes": 60},
+        {"name": "Frijol: Exceso de Lluvia",      "metric_type": "rain",          "condition": "gt", "threshold": 16.0, "severity": "warning",  "cooldown_minutes": 60},
     ],
 }
 

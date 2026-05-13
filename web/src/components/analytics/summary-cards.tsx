@@ -80,7 +80,7 @@ export default function SummaryCards({ summary, loading }: SummaryCardsProps) {
             ? `${metric.value.toFixed(1)}${metric.unit}`
             : "—";
         const fillPercent =
-          metric.value !== null
+          metric.value != null
             ? Math.min((metric.value / metric.maxThreshold) * 100, 100)
             : 0;
 

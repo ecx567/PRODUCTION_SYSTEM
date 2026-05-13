@@ -15,8 +15,12 @@ from pydantic import BaseModel, Field, field_validator
 
 # ── Allowed crop types ──────────────────────────────────────
 ALLOWED_CROP_TYPES = {
+    # Original 10
     "banana", "maize", "cacao", "rice",
     "coffee", "sugarcane", "soybean", "sunflower", "palm_oil", "cotton",
+    # Expansion (PR 1 — crop profiles)
+    "cassava", "sweet_potato", "coconut", "pineapple",
+    "mango", "papaya", "tomato", "beans",
 }
 
 
