@@ -10,6 +10,7 @@ import {
   SlidersHorizontal,
   Users,
   Settings,
+  BookOpen,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -50,6 +51,12 @@ const navGroups: Array<{
     items: [
       { href: "/dashboard/users", label: "Users", icon: Users },
       { href: "/dashboard/settings", label: "Settings", icon: Settings },
+    ],
+  },
+  {
+    label: "DOCUMENTATION",
+    items: [
+      { href: "/dashboard/documentation", label: "Documentación", icon: BookOpen },
     ],
   },
 ];
