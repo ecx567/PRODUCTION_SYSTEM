@@ -18,10 +18,10 @@ export default function ProfileSection({ user }: ProfileSectionProps) {
         <User className="h-10 w-10 text-leaf-200" />
         <div>
           <p className="text-sm font-medium text-leaf-700">
-            Not signed in
+            Visualización
           </p>
           <p className="mt-1 text-xs text-soil-400">
-            Sign in to view your profile information.
+            Sistema en modo visualización — no requiere autenticación.
           </p>
         </div>
       </div>

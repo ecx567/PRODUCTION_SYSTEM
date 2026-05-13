@@ -1,24 +1,11 @@
 /**
  * API client for the Crop Production System backend.
  *
- * - Base URL from NEXT_PUBLIC_API_URL env var
- * - JWT auth header injection
- * - Auto-refresh on 401 with retry
- * - Typed functions for all dashboard endpoints
+ * Public/visualization mode — no auth required.
+ * All endpoints are accessible without authentication.
  */
 
 // ── Types matching backend schemas ─────────────────────────────
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface TokenResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-}
 
 export interface FieldResponse {
   id: string;
@@ -111,49 +98,14 @@ export interface SensorGap {
   gap_minutes: number;
 }
 
-// ── Token management (localStorage + memory) ───────────────────
-
-let accessToken: string | null = null;
-let refreshToken: string | null = null;
-
-const TOKEN_KEY = "crop_access_token";
-const REFRESH_KEY = "crop_refresh_token";
-
-// Initialize tokens from localStorage on module load
-function initializeTokens(): void {
-  if (typeof window !== "undefined") {
-    accessToken = localStorage.getItem(TOKEN_KEY);
-    refreshToken = localStorage.getItem(REFRESH_KEY);
-  }
+export interface SessionUser {
+  user_id: string;
+  email: string;
+  role: string;
+  tenant_id: string;
 }
 
-// Initialize on first import
-initializeTokens();
-
-export function setTokens(access: string, refresh: string): void {
-  accessToken = access;
-  refreshToken = refresh;
-  // Persist to localStorage
-  if (typeof window !== "undefined") {
-    localStorage.setItem(TOKEN_KEY, access);
-    localStorage.setItem(REFRESH_KEY, refresh);
-  }
-}
-
-export function clearTokens(): void {
-  accessToken = null;
-  refreshToken = null;
-  if (typeof window !== "undefined") {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_KEY);
-  }
-}
-
-export function getAccessToken(): string | null {
-  return accessToken;
-}
-
-// ── Fetch wrapper ──────────────────────────────────────────────
+// ── Fetch wrapper (no auth — public mode) ──────────────────────
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -176,32 +128,10 @@ export async function apiFetch<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  // Inject auth token if available
-  if (accessToken) {
-    headers.set("Authorization", `Bearer ${accessToken}`);
-  }
-
   let res = await fetch(url, {
     ...fetchOptions,
     headers,
-    credentials: "include",
   });
-
-  // ── Auto-refresh on 401 ─────────────────────────────────────
-  if (res.status === 401 && refreshToken) {
-    const refreshed = await attemptTokenRefresh();
-    if (refreshed) {
-      // Retry original request with new token
-      const retryHeaders = new Headers(headers);
-      retryHeaders.set("Authorization", `Bearer ${accessToken}`);
-
-      res = await fetch(url, {
-        ...fetchOptions,
-        headers: retryHeaders,
-        credentials: "include",
-      });
-    }
-  }
 
   if (!res.ok) {
     const body = await res.text();
@@ -222,29 +152,6 @@ export async function apiFetch<T>(
   return res.json() as Promise<T>;
 }
 
-async function attemptTokenRefresh(): Promise<boolean> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/v1/auth/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-      credentials: "include",
-    });
-
-    if (!res.ok) {
-      clearTokens();
-      return false;
-    }
-
-    const data: TokenResponse = await res.json();
-    setTokens(data.access_token, data.refresh_token);
-    return true;
-  } catch {
-    clearTokens();
-    return false;
-  }
-}
-
 // ── Custom error class ─────────────────────────────────────────
 
 export class ApiError extends Error {
@@ -255,73 +162,6 @@ export class ApiError extends Error {
     this.name = "ApiError";
     this.status = status;
   }
-}
-
-// ── Auth ───────────────────────────────────────────────────────
-
-export async function loginUser(
-  email: string,
-  password: string,
-): Promise<TokenResponse> {
-  const data = await apiFetch<TokenResponse>("/api/v1/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
-  setTokens(data.access_token, data.refresh_token);
-  return data;
-}
-
-/** Cookie-based session check — calls GET /api/v1/auth/session.
- *  Returns user info or null (no session). */
-export interface SessionUser {
-  user_id: string;
-  email: string;
-  role: string;
-  tenant_id: string;
-}
-
-export async function checkSession(): Promise<SessionUser | null> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/v1/auth/session`, {
-      method: "GET",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-    });
-    if (!res.ok) return null;
-    return (await res.json()) as SessionUser;
-  } catch {
-    return null;
-  }
-}
-
-/** Cookie-based logout — calls POST /api/v1/auth/logout, then clears in-memory tokens. */
-export async function serverLogout(): Promise<void> {
-  try {
-    await fetch(`${BASE_URL}/api/v1/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
-  } catch {
-    // Swallow — best-effort server-side logout
-  }
-  clearTokens();
-}
-
-/** Signup — creates user, backend sets cookies, returns tokens for legacy compat. */
-export async function signupUser(
-  email: string,
-  password: string,
-  name?: string,
-): Promise<TokenResponse> {
-  const body: Record<string, string> = { email, password };
-  if (name) body.name = name;
-
-  const data = await apiFetch<TokenResponse>("/api/v1/auth/signup", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-  setTokens(data.access_token, data.refresh_token);
-  return data;
 }
 
 // ── Fields ─────────────────────────────────────────────────────

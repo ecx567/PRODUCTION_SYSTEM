@@ -24,10 +24,43 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domain.auth.models import User
+from app.domain.auth.models_tenant import Tenant
 from app.domain.auth.service import validate_token
 from fastapi import Request
 
 logger = logging.getLogger("crop.auth.middleware")
+
+# ── Public/visualization mode — no auth required ───────────
+# All authenticated dependencies fall back to the first tenant's context.
+_PUBLIC_TENANT_ID: str | None = None
+_PUBLIC_ROLE = "admin"
+
+
+async def _resolve_public_tenant(db: AsyncSession) -> str:
+    """Return the first tenant's UUID, caching it for the process lifetime."""
+    global _PUBLIC_TENANT_ID
+    if _PUBLIC_TENANT_ID is not None:
+        return _PUBLIC_TENANT_ID
+    result = await db.execute(select(Tenant).limit(1))
+    tenant = result.scalar_one_or_none()
+    if tenant is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="No tenant configured. Run the seed first.",
+        )
+    _PUBLIC_TENANT_ID = str(tenant.id)
+    logger.info("Public context resolved to tenant %s", _PUBLIC_TENANT_ID)
+    return _PUBLIC_TENANT_ID
+
+
+def _public_payload(tenant_id: str) -> AuthPayload:
+    return AuthPayload({
+        "sub": "public",
+        "tenant_id": tenant_id,
+        "role": _PUBLIC_ROLE,
+        "permissions": ["read", "write", "admin"],
+    })
+
 
 # ── Security scheme ────────────────────────────────────────
 _security_scheme = HTTPBearer(auto_error=False)
@@ -75,67 +108,67 @@ class AuthPayload(dict):
 
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_security_scheme)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> AuthPayload:
-    """Extract and validate the current user from the Bearer token.
+    """Return the current user context.
 
-    Expects an **access** token in the ``Authorization: Bearer <token>`` header.
-
-    Raises:
-        HTTPException(401): Missing, expired, or invalid token.
+    In **public/visualization mode** (no Bearer token) this resolves the first
+    tenant from the database and returns an admin-level context.
+    If a valid token is provided, it is validated and the JWT claims are used.
     """
-    if credentials is None:
-        raise _CREDENTIALS_EXC
 
-    token = credentials.credentials
-    try:
-        payload = validate_token(token, expected_type="access")
-    except jwt.ExpiredSignatureError:
-        raise _CREDENTIALS_EXC from None
-    except jwt.InvalidTokenError:
-        raise _CREDENTIALS_EXC from None
+    # ── If a token is provided, validate it ──────────────────────
+    if credentials is not None:
+        try:
+            payload = validate_token(credentials.credentials, expected_type="access")
+            return AuthPayload(payload)
+        except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+            logger.warning("Invalid token provided, falling back to public context")
 
-    return AuthPayload(payload)
+    # ── Public fallback ─────────────────────────────────────────
+    tenant_id = await _resolve_public_tenant(db)
+    return _public_payload(tenant_id)
 
 
 async def get_current_user_from_cookie(
     request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> AuthPayload:
     """Extract and validate the current user from the ``session`` httpOnly cookie.
 
-    Used by the web client's ``GET /session`` endpoint. The cookie carries an
-    **access** JWT, validated identically to the ``Authorization`` header path.
-
-    Raises:
-        HTTPException(401): Missing, expired, or invalid cookie.
+    Falls back to public context if no cookie is present.
     """
     token = request.cookies.get("session")
-    if not token:
-        raise _CREDENTIALS_EXC
+    if token:
+        try:
+            payload = validate_token(token, expected_type="access")
+            return AuthPayload(payload)
+        except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+            logger.warning("Invalid session cookie, falling back to public context")
 
-    try:
-        payload = validate_token(token, expected_type="access")
-    except jwt.ExpiredSignatureError:
-        raise _CREDENTIALS_EXC from None
-    except jwt.InvalidTokenError:
-        raise _CREDENTIALS_EXC from None
-
-    return AuthPayload(payload)
+    # ── Public fallback ─────────────────────────────────────────
+    tenant_id = await _resolve_public_tenant(db)
+    return _public_payload(tenant_id)
 
 
 async def optional_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_security_scheme)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> AuthPayload | None:
-    """Like ``get_current_user`` but returns ``None`` instead of 401.
+    """Like ``get_current_user`` but returns public context instead of None.
 
     Useful for endpoints where authentication is optional (e.g., public read).
     """
-    if credentials is None:
-        return None
-    try:
-        payload = validate_token(credentials.credentials, expected_type="access")
-        return AuthPayload(payload)
-    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
-        return None
+    if credentials is not None:
+        try:
+            payload = validate_token(credentials.credentials, expected_type="access")
+            return AuthPayload(payload)
+        except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+            pass
+
+    # ── Public fallback ─────────────────────────────────────────
+    tenant_id = await _resolve_public_tenant(db)
+    return _public_payload(tenant_id)
 
 
 async def tenant_scoped(

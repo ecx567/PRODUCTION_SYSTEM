@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { User, Bell, Monitor, Key, Settings } from "lucide-react";
 import { loadSettings, saveSettings, resetSettings } from "@/lib/settings";
 import type { UserSettings } from "@/lib/settings";
-import type { SessionUser } from "@/lib/api";
-import { getAccessToken } from "@/lib/api";
 import ProfileSection from "@/components/settings/profile-section";
 import NotificationsSection from "@/components/settings/notifications-section";
 import DisplaySection from "@/components/settings/display-section";
@@ -28,25 +26,6 @@ const TABS: TabDef[] = [
   { id: "api-keys", label: "API Keys", icon: Key },
 ];
 
-// ── JWT decode helper ───────────────────────────────────────────
-
-function decodeUserFromToken(): SessionUser | null {
-  const token = getAccessToken();
-  if (!token) return null;
-
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return {
-      user_id: payload.sub ?? "",
-      email: payload.email ?? "",
-      role: payload.role ?? "admin",
-      tenant_id: payload.tenant_id ?? "",
-    };
-  } catch {
-    return null;
-  }
-}
-
 // ── Page component ──────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -54,15 +33,9 @@ export default function SettingsPage() {
   const [userSettings, setUserSettings] = useState<UserSettings>(() =>
     loadSettings(),
   );
-  const [user, setUser] = useState<SessionUser | null>(null);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "error">(
     "saved",
   );
-
-  // Decode user from JWT on mount
-  useEffect(() => {
-    setUser(decodeUserFromToken());
-  }, []);
 
   // Persist to localStorage whenever settings change (save on change)
   const handleSettingsChange = useCallback(
@@ -166,7 +139,7 @@ export default function SettingsPage() {
 
       {/* ── Active tab content ── */}
       <div data-testid={`section-${activeTab}`}>
-        {activeTab === "profile" && <ProfileSection user={user} />}
+        {activeTab === "profile" && <ProfileSection user={null} />}
         {activeTab === "notifications" && (
           <NotificationsSection
             settings={userSettings.notifications}
